@@ -14,7 +14,7 @@
 }
 
 .App-header {
-  background-color: #282c34;
+  background-color: #1b63f4;
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -35,4 +35,21 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+.nav-btn{
+  color: rgb(0, 0, 0);
+  border-radius: 10px;
+  padding:7px;
+  box-shadow: 0 0 9px rgb(175, 175, 175) ;
+}
+.webpage-name{
+  padding: 0px;
+  /* border-radius: 20px; */
+  /* filter: drop-shadow(0 0 9px rgb(255, 255, 255)); */
+  box-shadow: 0 0 20px rgb(255, 253, 254);
+  /* background-color: rgb(0, 119, 255); */
+}
+.mynavbar{
+  background-color: rgb(238, 238, 238);
 }

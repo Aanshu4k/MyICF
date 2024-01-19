@@ -1,0 +1,35 @@
+#dropdown-basic {
+    width: 40rem;
+}
+
+.division-section {
+    display: flex;
+    flex-direction: row;
+    width: max-content;
+    flex-wrap: wrap;
+}
+
+.top-buttons {
+    display: flex;
+    justify-content: space-evenly;
+}
+
+.fetched-cases-table {
+    height: 350px;
+    overflow-y: scroll;
+    margin: 5px;
+    padding: 5px;
+    border: 5px solid rgb(231, 231, 231);
+    border-radius: 20px;
+    box-shadow: 0 0 10px rgb(158, 158, 158);
+}
+
+tr.selected {
+    background-color: #318ef3;
+    color: white;
+    cursor: pointer;
+}
+
+tr.selected:hover {
+    background-color: #318ef3;
+}
