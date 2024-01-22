@@ -1,15 +1,15 @@
 import './App.css';
-import { BrowserRouter as Router, Route, Navigate, Routes, Link } from 'react-router-dom';
-import Login from './components/Login/Login';
+import { BrowserRouter as Router, Route, Navigate, Routes, Link } from 'react-router-dom';  
 import React, { useState, useEffect } from 'react';
 import HomePage from './components/HomePage/HomePage';
 import Container from "react-bootstrap/Container";
 import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
 import DisplayIP from './components/DisplayIP';
+import Login2 from './components/Login/Login2';
 
 function App() {
-  const [isLoggedIn, setLoggedIn] = useState(false);
+  const [isLoggedIn, setLoggedIn] = useState(true);
   useEffect(() => {
     const isUserLoggedIn = localStorage.getItem('userIsLoggedIn');
     if (isUserLoggedIn === 'true') {
@@ -22,8 +22,9 @@ function App() {
   }
   return (
     <Router>
-
-      {localStorage.getItem('userIsLoggedIn') && (
+      {
+      localStorage.getItem('userIsLoggedIn')
+      && (
         <Navbar
           fixed="top"
           collapseOnSelect
@@ -61,7 +62,7 @@ function App() {
       <div>
         <Routes>
           <Route path="/login"
-            element={localStorage.getItem('userIsLoggedIn') ? <Navigate to="/home" /> : <Login setLoggedIn={setLoggedIn} />}
+            element={localStorage.getItem('userIsLoggedIn') ? <Navigate to="/home" /> : <Login2 setLoggedIn={setLoggedIn} />}
           />
           <Route path="/home" element={true ? <HomePage /> : <Navigate to="/login" />} />
           {/* <Route path="/*" element={isLoggedIn ? <HomePage /> : <Navigate to="/login" />} /> */}

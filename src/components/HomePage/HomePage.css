@@ -7,8 +7,14 @@
     flex-direction: row;
     width: max-content;
     flex-wrap: wrap;
+    width: 100%;
+    align-content: center;
+    justify-content: center;
+    align-items: stretch;
 }
-
+select{
+    border-radius: 10px;
+}
 .top-buttons {
     display: flex;
     justify-content: space-evenly;
