@@ -1,0 +1,40 @@
+.report-container {
+    margin-top: 6rem;
+  }
+  
+  .report-header {
+    display: flex;
+    justify-content: center;
+  }
+  
+  .report-search {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    align-items: center;
+    margin: 1rem 0;
+    --bs-gutter-x: 1.5rem;
+    text-align: justify;
+  }
+  tr{
+    text-align: center;
+  }
+  .report-search Form.Group {
+    margin-right: 1rem;
+  }
+  .table-responsive{
+    width: 70%;
+  }
+  .report-table {
+    display: flex;
+    justify-content: center;
+    padding: 0 13rem;
+    margin: 2rem 0rem;
+    height: 500px;
+    overflow-y: auto;
+  }
+  
+  .report-table Table {
+    border: 2px solid grey;
+  }
+  

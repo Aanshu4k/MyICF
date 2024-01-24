@@ -1,12 +1,13 @@
 import './App.css';
-import { BrowserRouter as Router, Route, Navigate, Routes, Link } from 'react-router-dom';
-import Login from './components/Login/Login';
+import { BrowserRouter as Router, Route, Navigate, Routes, Link } from 'react-router-dom';  
 import React, { useState, useEffect } from 'react';
 import HomePage from './components/HomePage/HomePage';
 import Container from "react-bootstrap/Container";
 import Nav from "react-bootstrap/Nav";
 import Navbar from "react-bootstrap/Navbar";
-import DisplayIP from './components/DisplayIP';
+import Login2 from './components/Login/Login2';
+import ReportDetails from './components/icfReport/ReportDetails';
+import RequestTabs from './components/Output/RequestTabs';
 
 function App() {
   const [isLoggedIn, setLoggedIn] = useState(false);
@@ -22,16 +23,15 @@ function App() {
   }
   return (
     <Router>
-
-      {localStorage.getItem('userIsLoggedIn') && (
+      { localStorage.getItem('userIsLoggedIn') && (
         <Navbar
           fixed="top"
           collapseOnSelect
           expand="lg"
-          className="mynavbar" style={{ boxShadow: '0px 5px 10px grey', height: '12vh' }}
+          className="mynavbar" style={{ boxShadow: '0px 5px 10px grey', height:'4rem' }}
         >
           <Container>
-            <Navbar.Brand as={Link} to="/home" style={{ }}>
+            <Navbar.Brand as={Link} to="/home">
               <img className="webpage-name"
                 style={{ height: "1.5rem" }}
                 src="./layout_set_logo.png"
@@ -58,14 +58,15 @@ function App() {
           </Container>
         </Navbar>
       )}
-      <div>
+      <div style={{marginTop:'4rem'}}>
         <Routes>
           <Route path="/login"
-            element={localStorage.getItem('userIsLoggedIn') ? <Navigate to="/home" /> : <Login setLoggedIn={setLoggedIn} />}
+            element={localStorage.getItem('userIsLoggedIn') ? <Navigate to="/home" /> : <Login2 setLoggedIn={setLoggedIn} />}
           />
           <Route path="/home" element={true ? <HomePage /> : <Navigate to="/login" />} />
-          {/* <Route path="/*" element={isLoggedIn ? <HomePage /> : <Navigate to="/login" />} /> */}
-          <Route path="/myip" element={isLoggedIn ? <DisplayIP /> : <Navigate to="/login" />} />
+          <Route path="/" element={isLoggedIn ? <HomePage /> : <Navigate to="/login" />} />
+          <Route path="/output" element={isLoggedIn ? <RequestTabs /> : <Navigate to="/login" />} />
+          <Route path="/reports" element={<ReportDetails />} />
         </Routes>
       </div>
     </Router>

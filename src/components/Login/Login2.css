@@ -1,0 +1,23 @@
+.background-wall {
+    height: 729px;
+  }
+  .main-wallpaper {
+    width: 55rem;
+    height: 100%;
+  }
+  .login-section {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 13rem 0 10rem 0;
+    margin: 0 5rem 0 5rem;
+  }
+  .main-container {
+    align-items: center;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    min-height: 13rem;
+    /* padding: 70px 0;     */
+    justify-content: space-between;
+  }

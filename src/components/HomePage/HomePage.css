@@ -1,14 +1,25 @@
 #dropdown-basic {
     width: 40rem;
 }
-
+.top-section {
+    background: rgba(255, 135, 135, 0.3); /* Adjust the RGBA values as needed */
+    margin: 30px 0;
+    padding: 30px;
+  }
+  
 .division-section {
     display: flex;
     flex-direction: row;
     width: max-content;
     flex-wrap: wrap;
+    width: 100%;
+    align-content: center;
+    justify-content: center;
+    align-items: stretch;
 }
-
+select{
+    border-radius: 10px;
+}
 .top-buttons {
     display: flex;
     justify-content: space-evenly;
@@ -32,4 +43,16 @@ tr.selected {
 
 tr.selected:hover {
     background-color: #318ef3;
+}
+.pagination-container
+{
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+.table tr th{
+    background: #c2c2c2;;
+    color: #000000;
+    font-size: 12px;
+    vertical-align: middle;
 }
