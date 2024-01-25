@@ -45,7 +45,6 @@ const ReportDetails = () => {
         const newFilteredRows = reportData.filter(row => row.aufnr && row.aufnr.includes(searchTerm));
         setReportData(newFilteredRows);
     };
-
     return (
         <div className="report-container">
             <div className="report-header">
@@ -58,10 +57,10 @@ const ReportDetails = () => {
                         Search
                     </Button>
                 </Form.Group>
-                <div style={{ display: 'flex', marginLeft: '20rem' }}>
+                <div style={{ display: 'flex',marginLeft:'12rem',alignItems:'baseline' }}>
                     <Form.Label>From</Form.Label>
                     <Form.Control type="date" onChange={(e) => setFromDate(e.target.value)} />
-                    <Form.Label>To</Form.Label>
+                    {" "}<Form.Label>To</Form.Label>
                     <Form.Control type="date" onChange={(e) => setToDate(e.target.value)} />
                     <Button type="submit" onClick={handleReportSearch}>
                         Search
@@ -70,7 +69,7 @@ const ReportDetails = () => {
             </div>
             <div className="report-table">
                 <Table striped bordered hover responsive>
-                    <thead style={{ position: '' }}>
+                    <thead>
                         <tr>
                             <th>User ID</th>
                             <th>Request No</th>
@@ -82,15 +81,16 @@ const ReportDetails = () => {
                     </thead>
                     <tbody>
                         {reportData.map((data, index) => (
-                            <tr key={data._id}>
-                                <td>{index + 1}</td>
-                                <td>{data.aufnr}</td>
-                                <td>{data.duesData.length > 0 ? data.duesData[0].DIVISION : 'N/A'}</td>
-                                <td>{data.selectedMcd.length > 0 ? 'Yes' : 'No'}</td>
-                                <td>{data.selectedDues.length > 0 ? 'Yes' : 'No'}</td>
-                                <td>{formatDate(data.createdAt)}</td>
-                            </tr>
-                        ))}
+                            data.duesData.length > 0 && (
+                                <tr key={data._id}>
+                                    <td>{data.duesData.length > 0 ? data.duesData[0].ID : ''}</td>
+                                    <td>{data.aufnr}</td>
+                                    <td>{data.duesData.length > 0 ? data.duesData[0].DIVISION : ''}</td>
+                                    <td>{data.selectedMcd.length > 0 ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td>
+                                    <td>{data.selectedDues.length > 0 ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td>
+                                    <td>{formatDate(data.createdAt)}</td>
+                                </tr>
+                            )))}
                     </tbody>
                 </Table>
             </div>

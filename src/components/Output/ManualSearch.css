@@ -1,0 +1,11 @@
+.filter-section{
+    text-align: center;
+}
+.form-check-box{
+    display: inline-block;
+    margin-right: 1rem;
+}
+.manual-search-form{
+    display: flex;
+    justify-content: center;
+}

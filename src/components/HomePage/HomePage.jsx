@@ -3,7 +3,7 @@ import Table from "react-bootstrap/Table";
 import "./HomePage.css";
 import { useNavigate } from 'react-router-dom';
 import Button from "react-bootstrap/Button";
-import { Toaster,toast } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 import axios from "axios";
 import CloseButton from 'react-bootstrap/CloseButton';
 
@@ -705,11 +705,11 @@ const HomePage = () => {
     return (
         <div style={{ marginTop: "4rem", padding: "0 5rem", justifyContent: 'center' }}>
             <Toaster
-  position="top-center"
-  reverseOrder={false}
-/>
+                position="top-center"
+                reverseOrder={false}
+            />
             <div className="top-section">
-                <div style={{textAlign:'center'}}>
+                <div style={{ textAlign: 'center' }}>
                     <h4>Request Pending For CF</h4>
                 </div>
                 <div className="division-section">
@@ -747,7 +747,7 @@ const HomePage = () => {
                     <Table striped bordered hover style={{ height: "auto" }}>
                         <thead style={{ position: "sticky" }}>
                             <tr>
-                                <th>Select</th>
+                                <th>SELECT</th>
                                 <th>ORDER NO</th>
                                 <th>REQUEST NO</th>
                                 <th>NAME</th>
@@ -796,8 +796,8 @@ const HomePage = () => {
                                             }
                                         })()}
                                     </td>
-                                    <td><i style={{ color: 'green', fontSize: '18px' }}><CloseButton /></i></td>
-                                    <td><CloseButton /></td>
+                                    <td>{data.dues_found ? (<span className='span-check'>&#10003;</span>) : (<span className='span-cross'>&#10540;</span>)}</td>
+                                    <td>{data.mcd_found ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -807,19 +807,19 @@ const HomePage = () => {
             {showTable && (
                 <div className="pagination-container">
                     <Button
-                        variant="outline-primary"
+                        variant="outline-danger"
                         onClick={() => setCurrentPage(currentPage - 1)}
                         disabled={currentPage === 1}
                     >
-                        Previous
+                        <b>PREV</b>
                     </Button>{" "}
                     <span>{`Page ${currentPage} of ${totalPages}`}</span>
                     <Button
-                        variant="outline-primary"
+                        variant="outline-danger"
                         onClick={() => setCurrentPage(currentPage + 1)}
                         disabled={currentPage === totalPages}
                     >
-                        Next
+                        <b>NEXT</b>
                     </Button>
                 </div>
             )}
