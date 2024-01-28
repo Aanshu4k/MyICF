@@ -3,7 +3,7 @@ import { Row, Col, Form, Button } from 'react-bootstrap';
 import './ManualSearch.css';
 const ManualSearch = () => {
     return (
-        <div style={{  padding: '0 100px'}}>
+        <div style={{  padding: '2rem 100px'}}>
             <div style={{ border: '2px solid grey',padding:'10px',borderRadius:'10px' }}>
                 <Table striped bordered hover responsive >
                     <thead>

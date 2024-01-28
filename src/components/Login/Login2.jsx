@@ -16,11 +16,7 @@ const Login2 = () => {
     setLoginDetails((prevValue) => ({ ...prevValue, [name]: value }));
   };
   const handleSubmit = async (e) => {
-<<<<<<< HEAD
-    // e.preventDefault();
-=======
     e.preventDefault();
->>>>>>> 979e8ec3ddcdbdb52d5ba4a7a6882ffea9a20c3f
     setLoginDetails({ ...loginDetails, submitted: true });
     if (loginDetails.email && loginDetails.password) {
       try {
@@ -63,11 +59,7 @@ const Login2 = () => {
               style={{ height: "5rem", borderRadius: "0 20px" }}
             />
           </div>
-<<<<<<< HEAD
-          <Form onSubmit={handleSubmit} style={{width:'30rem'}}>
-=======
           <Form onSubmit={handleSubmit} style={{width:'25rem'}}>
->>>>>>> 979e8ec3ddcdbdb52d5ba4a7a6882ffea9a20c3f
             <Form.Group className="mb-3" controlId="formBasicEmail">
               <Form.Label>
                 <b>USER NAME</b>
@@ -105,8 +97,4 @@ const Login2 = () => {
     </div>
   );
 };
-<<<<<<< HEAD
 export default Login2;
-=======
-export default Login2;
->>>>>>> 979e8ec3ddcdbdb52d5ba4a7a6882ffea9a20c3f
