@@ -3,14 +3,17 @@ import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
 import Table from 'react-bootstrap/Table';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faSort, faSortUp, faSortDown } from '@fortawesome/free-solid-svg-icons';
 import './ReportDetails.css';
 
 const ReportDetails = () => {
     const [reportData, setReportData] = useState([]);
-    const [reportData_copy, setReportDataCopy] = useState([]);
-    const [fromDate, setFromDate] = useState();
-    const [toDate, setToDate] = useState();
+    const [reportDataCopy, setReportDataCopy] = useState([]);
+    const [fromDate, setFromDate] = useState('');
+    const [toDate, setToDate] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortConfig, setSortConfig] = useState({ key: null, direction: '' });
 
     useEffect(() => {
         axios.get('http://localhost:5001/api/icf_reports')
@@ -30,34 +33,88 @@ const ReportDetails = () => {
     }
 
     const handleReportSearch = () => {
-        const filtered = reportData.filter((prevData) =>
+        const filtered = reportDataCopy.filter((prevData) =>
             prevData.createdAt >= fromDate && prevData.createdAt <= toDate
         );
-        setReportData(filtered);
+        if (fromDate === toDate || fromDate) {
+            const sameDateData = reportDataCopy.filter(
+                (prevData) => formatDate(prevData.createdAt) === formatDate(fromDate)
+            );
+            setReportData(sameDateData);
+        } else {
+            setReportData(filtered);
+        }
     };
 
-    const handleSearchBar = () => {
+
+    const handleSearchByRequestNo = () => {
         console.log("Aufnr search term : ", searchTerm);
         if (!searchTerm) {
-            setReportData(reportData_copy);
+            setReportData(reportDataCopy);
             return;
         }
-        const newFilteredRows = reportData.filter(row => row.aufnr && row.aufnr.includes(searchTerm));
+        const newFilteredRows = reportDataCopy.filter(row => row.requestNo && row.requestNo.includes(searchTerm.trim()));
         setReportData(newFilteredRows);
     };
+    const handleSearchByUserId = () => {
+        if (!searchTerm) {
+            setReportData(reportDataCopy);
+            return;
+        }
+        const newFilteredRows = reportDataCopy.filter(row => row.userId && row.userId.includes(searchTerm.trim()));
+        setReportData(newFilteredRows);
+    }
+    //this will toggle the sorting direction Asc or Desc
+    const requestSort = (key) => {
+        let direction = 'asc';
+        if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+            direction = 'desc';
+        }
+        setSortConfig({ key, direction });
+    };
+    //function to sort the data asc or desc
+    const sortedData = () => {
+        const sortedReportData = [...reportData];
+        if (sortConfig !== null) {
+            sortedReportData.sort((a, b) => {
+                if (a[sortConfig.key] < b[sortConfig.key]) {
+                    return sortConfig.direction === 'asc' ? -1 : 1;
+                }
+                if (a[sortConfig.key] > b[sortConfig.key]) {
+                    return sortConfig.direction === 'asc' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return sortedReportData;
+    };
+
+    const getSortIcon = (columnName) => {
+        if (sortConfig && sortConfig.key === columnName) {
+            return sortConfig.direction === 'asc' ? faSortUp : faSortDown;
+        }
+        return faSort;
+    };
+
     return (
         <div className="report-container">
             <div className="report-header">
                 <h4>ICF REPORT</h4>
             </div>
             <div className="report-search">
-                <Form.Group controlId="formFile" className="mb-3" style={{ display: 'flex', alignItems: 'center', width: '30%' }}>
+                <Form.Group controlId="formFile" className="mb-3" style={{ display: 'flex', alignItems: 'center' }}>
                     <Form.Control placeholder='Search by Request No.' type="text" onChange={(e) => setSearchTerm(e.target.value)} />
-                    <Button type="submit" onClick={handleSearchBar}>
+                    <Button type="submit" onClick={handleSearchByRequestNo}>
+                        Search
+                    </Button>
+                </Form.Group>{" "}
+                <Form.Group controlId="formFile" className="mb-3" style={{ display: 'flex', alignItems: 'center' }}>
+                    <Form.Control placeholder='Search by User Id' type="text" onChange={(e) => setSearchTerm(e.target.value)} />
+                    <Button type="submit" onClick={handleSearchByUserId}>
                         Search
                     </Button>
                 </Form.Group>
-                <div style={{ display: 'flex',marginLeft:'12rem',alignItems:'baseline' }}>
+                <div style={{ display: 'flex', marginLeft: '12rem', alignItems: 'baseline' }}>
                     <Form.Label>From</Form.Label>
                     <Form.Control type="date" onChange={(e) => setFromDate(e.target.value)} />
                     {" "}<Form.Label>To</Form.Label>
@@ -71,31 +128,41 @@ const ReportDetails = () => {
                 <Table striped bordered hover responsive>
                     <thead>
                         <tr>
-                            <th>User ID</th>
-                            <th>Request No</th>
-                            <th>Division</th>
+                            <th onClick={() => requestSort('userId')}>
+                                User ID
+                                <FontAwesomeIcon icon={getSortIcon('userId')} />
+                            </th>
+                            <th onClick={() => requestSort('requestNo')}>
+                                Request No
+                                <FontAwesomeIcon icon={getSortIcon('requestNo')} />
+                            </th>
+                            <th onClick={() => requestSort('division')}>
+                                Division
+                                <FontAwesomeIcon icon={getSortIcon('division')} />
+                            </th>
                             <th>MCD</th>
                             <th>DUES</th>
-                            <th>Date</th>
+                            <th onClick={() => requestSort('createdAt')}>
+                                Date
+                                <FontAwesomeIcon icon={getSortIcon('createdAt')} />
+                            </th>
                         </tr>
                     </thead>
                     <tbody>
-                        {reportData.map((data, index) => (
-                            data.duesData.length > 0 && (
-                                <tr key={data._id}>
-                                    <td>{data.duesData.length > 0 ? data.duesData[0].ID : ''}</td>
-                                    <td>{data.aufnr}</td>
-                                    <td>{data.duesData.length > 0 ? data.duesData[0].DIVISION : ''}</td>
-                                    <td>{data.selectedMcd.length > 0 ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td>
-                                    <td>{data.selectedDues.length > 0 ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td>
-                                    <td>{formatDate(data.createdAt)}</td>
-                                </tr>
-                            )))}
+                        {sortedData().map((data, index) => (
+                            <tr key={data._id}>
+                                <td>{data.userId}</td>
+                                <td>{data.requestNo}</td>
+                                <td>{data.division}</td>
+                                <td>{data.type === '1' || data.type === '2' ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td>
+                                <td>{data.type === '' || data.type === '2' ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td>
+                                <td>{formatDate(data.createdAt)}</td>
+                            </tr>
+                        ))}
                     </tbody>
                 </Table>
             </div>
         </div>
     );
 };
-
 export default ReportDetails;

@@ -1,7 +1,6 @@
 import Table from "react-bootstrap/Table";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import { Nav, Navbar } from "react-bootstrap";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 const SealingSearch = () => {
@@ -97,52 +96,74 @@ const SealingSearch = () => {
           </Table>
         </Tab>
       </Tabs>
-      <div style={{ display: "flex", border: "2px solid grey" }}>
-        <Form className="p-3">
-          <Form.Group controlId="division">
-            <Form.Label>Multiple Division MCD</Form.Label>
-            <Form.Control type="text" placeholder="Enter division" />
-          </Form.Group>
-          <Form.Group controlId="khasra">
-            <Form.Label>House / Plot / Block / Khasra</Form.Label>
-            <Form.Control type="text" placeholder="Enter khasra" />
-          </Form.Group>
-          <Form.Group controlId="number">
-            <Form.Label>Number (House / Plot / Block)</Form.Label>
-            <Form.Control type="text" placeholder="Enter number" />
-          </Form.Group>
-          <Form.Group controlId="area">
-            <Form.Label>Area</Form.Label>
-            <Form.Control type="text" placeholder="Enter area" />
-          </Form.Group>
-          <Button variant="danger" className="mr-2">
-            Start MCD Search
-          </Button>
+      <div style={{ display: "flex", border: "2px solid grey", justifyContent: 'space-around' }}>
+        <Form className="p-3" >
+          <div className="row" style={{ padding: '10px' }}>
+            <div className="col-md-6">
+              <Form.Group controlId="division">
+                <Form.Select placeholder="Select Division">
+                  <option value="division1">Select Division</option>
+                  <option value="division1">Division 1</option>
+                  <option value="division2">Division 2</option>
+                  <option value="division3">Division 3</option>
+                </Form.Select>
+              </Form.Group>
+            </div>
+            <div className="col-md-6">
+              <Form.Group controlId="khasra">
+                <Form.Control type="text" placeholder="House / Plot / Block / Khasra" />
+              </Form.Group>
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-md-6">
+              <Form.Group controlId="number">
+                <Form.Control type="text" placeholder="Number (House / Plot / Block)" />
+              </Form.Group>
+            </div>
+            <div className="col-md-6">
+              <Form.Group controlId="area">
+                <Form.Control type="text" placeholder="Area" />
+              </Form.Group>
+            </div>
+          </div>
+          <div className="row">
+            <div className="col-md-12" style={{ textAlign: 'center', margin: '10px' }}>
+              <Button variant="danger" className="mr-2">
+                Start MCD Search
+              </Button>
+            </div>
+          </div>
         </Form>
         <div className="p-3">
-          <Form inline>
-            <Form.Group controlId="number2">
-              <Form.Label className="mr-2">
-                Number (House / Plot / Block)
-              </Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Enter number"
-                className="mr-2"
-              />
-            </Form.Group>
-            <Button variant="danger" className="mr-2">
-              Refine Search
-            </Button>
-            <Button variant="secondary" className="mr-2">
-              Original List
-            </Button>
-            <Button variant="primary" className="mr-2">
-              Back To Home
-            </Button>
-            <Button variant="success">
-              <i className="fa fa-check"></i> Complete MCD Search
-            </Button>
+          <Form style={{ display: 'flex', flexDirection: 'column' }}>
+            <div style={{ display: 'flex', alignItems: 'flex-end', margin: '10px 0' }}>
+              <Form.Group controlId="number2">
+                <Form.Label className="mr-2">
+                  Number (House / Plot / Block)
+                </Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="Enter number"
+                  className="mr-2"
+                />
+              </Form.Group>
+              <Button variant="danger" className="mr-2">
+                Refine Search
+              </Button>
+              <Button variant="secondary" className="mr-2">
+                Original List
+              </Button>
+            </div>
+            <div>
+              <Button variant="primary" className="mr-2">
+                Back To Home
+              </Button>
+              <Button variant="success">
+                <i className="fa fa-check"></i> Complete MCD Search
+              </Button>
+            </div>
+
           </Form>
         </div>
       </div>

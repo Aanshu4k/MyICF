@@ -9,3 +9,10 @@
     display: flex;
     justify-content: center;
 }
+.refine-search-form{
+    display: flex;
+    justify-content: center;
+}
+body{
+    font-family: 'Times New Roman', Times, serif;
+}

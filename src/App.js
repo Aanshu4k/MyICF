@@ -11,7 +11,7 @@ import ReportDetails from './components/icfReport/ReportDetails';
 import RequestTabs from './components/Output/RequestTabs';
 
 function App() {
-  const [isLoggedIn, setLoggedIn] = useState(true); // Changed initial state to false
+  const [isLoggedIn, setLoggedIn] = useState(false); // Changed initial state to false
 
   useEffect(() => {
     const isUserLoggedIn = localStorage.getItem('userIsLoggedIn');
