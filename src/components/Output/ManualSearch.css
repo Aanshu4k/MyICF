@@ -12,7 +12,12 @@
 .refine-search-form{
     display: flex;
     justify-content: center;
+    flex-wrap: wrap;
 }
-body{
-    font-family: 'Times New Roman', Times, serif;
+.fixed-header{
+    font-size: 2rem;
+}
+tbody{
+    font-size: 14px;
+    line-height: 1rem;
 }

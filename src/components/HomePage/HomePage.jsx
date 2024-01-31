@@ -35,7 +35,6 @@ const HomePage = () => {
                 console.error("Error fetching divisions:", error);
             });
     };
-
     useEffect(() => {
         fetchDivisions();
         fetchIpAddress();
@@ -100,7 +99,7 @@ const HomePage = () => {
                 setCaseCount(rowsWithId.length); // Update the case count
                 console.log("Fetched cases data:", rowsWithId);
                 let filter = divisions.filter((x) => x.VAPLZ === value);
-                localStorage.setItem("selectedDivision", JSON.stringify(filter));
+                localStorage.setItem("selectedDivision", JSON.stringify(selectedDivision));
 
                 //API call to fetch synonyms
                 fetch(`${url.API_url}/api/synonyms`, {
@@ -156,14 +155,13 @@ const HomePage = () => {
         console.log("selected row: ", selectedRows);
         setSelectedRows([row]); // Set the selected row to an array containing only the clicked row
         // Update selected row count but its always 1
-        localStorage.setItem("manual",JSON.stringify(row));
-        setSelectedRowCount(1);
+        localStorage.setItem("manual", JSON.stringify(row));
     };
     const handleReset = () => {
         setSelectedDivision(""); // Reset selected division
         setCases([]); // Clear cases data
         setCaseCount(0); // Reset case count
-        setResetDivision(true); // Trigger a reset for the division dropdown
+        setDivisions(divisions.map(div=>div)); // Trigger a reset for the division dropdown
         setShowTable(false);
     };
     let findLastLongestWord = (str) => {
@@ -566,560 +564,286 @@ const HomePage = () => {
         localStorage.setItem('selectedRows_1', JSON.stringify([]));
         localStorage.setItem('selectedMatchedRows', JSON.stringify(selectedRows));
         if (selectedRows.length === 0) {
-          console.warn("No rows selected. Please select one or more rows.");
-          toast.error("Please select a case to start searching");
-          return;
-        }
-    
-        function setSearchLogs(payload) {
-          let usertype = localStorage.getItem("user") || "undefined"
-          payload['usertype'] = usertype;
-          const requestPromise = fetch(`${url.API_url}/api/create_log`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(payload),
-          })
-            .then((response) => response.json())
-            .then(async (data) => {
-    
-            })
-        }
-        const requests = [];
-        let saveExistRes = {};
-        let addr = [];
-        const requestPromises = selectedRows.map(async (row, index) => {
-          const startTime = new Date();
-          let finalStr = await searchMatchingResultAlgoAgain(row.SAP_ADDRESS, []);
-          const inputAddress = row.SAP_ADDRESS;
-          function containsWord(word) {
-            if (word && word.includes('NO')) {
-              return false;
-            }
-            return exclude_terms.some(arrWord => word.includes(arrWord.toUpperCase()))
-          }
-    
-          let new_arr = finalStr.filter(x => !containsWord(x))
-          finalStr = new_arr;
-          const uniqueArray = [...new Set(finalStr)];
-          finalStr = uniqueArray;
-          let secondFinalStr = await searchMatchingResultAlgoAgainForWords(row.SAP_ADDRESS, []);
-          console.log(finalStr, "kaml sharma", secondFinalStr);
-    
-          // secondFinalStr = secondFinalStr.filter(x => !containsWord1(x));
-          console.log(finalStr, "kaml sharma `1", secondFinalStr);
-    
-          let uniqueArray1 = [...new Set(secondFinalStr)];
-          uniqueArray1 = uniqueArray1.map(x => x.toUpperCase());
-          console.log(finalStr, "kaml sharma", uniqueArray1);
-          let gali_no = finalStr.filter(x => x.includes('GALI'));
-          finalStr = finalStr.filter(x => !x.includes('GALI'));
-    
-          uniqueArray1 = uniqueArray1.filter(x => !x.includes('GALI'))
-    
-          uniqueArray1.push(...gali_no);
-          uniqueArray1 = uniqueArray1.filter(x => !x.includes('EXT'));
-    
-          let r = [];
-          let r1 = [];
-          let isAreaExis1t = [];
-    
-          finalStr.forEach(x => {
-            const prefix = x.match(/^([a-zA-Z]+)(.*)/);
-            if (prefix && prefix.length) {
-              let arr = getWordArr(prefix[1], prefix[2]);
-              let isAreaExist = getWordArr1(prefix[1]);
-              if (isAreaExist.length) {
-                isAreaExis1t.push(x);
-                r1.push(x, ...arr)
-              } else {
-                console.log(arr, "arrarrarr")
-                r.push(x, ...arr)
-              }
-            } else {
-              r.push(x)
-            }
-          });
-          console.log(r, "qwerty...");
-          let areaExist2 = [];
-          console.log(uniqueArray1, "ajay sir");
-          let removeonlystr = ["dairy", "hn0", "propno", "and"];
-          r.map(x => x = removeWordsFromArray(x, removeonlystr));
-    
-          let sealing_str = []
-          uniqueArray1.forEach(x => {
-            const prefix = x.match(/^([a-zA-Z]+)(.*)/);
-            if (prefix && prefix.length) {
-              let arr = getWordArr(prefix[1], prefix[2]);
-              let area = getWordArr1(prefix[1]);
-              if (area.length) {
-                if (x && x.length <= 3) {
-                  areaExist2.push(x);
-                  sealing_str.push(x);
-                } else {
-                  let breakword = x.slice(0, 3);
-                  let breakword1 = x.slice(0, 4);
-                  sealing_str.push(x, breakword1);
-                  areaExist2.push(x, breakword)
-                }
-    
-              } else {
-                console.log(arr, "array")
-                r1.push(x, ...arr)
-              }
-            } else {
-              r1.push(x)
-            }
-          });
-    
-          console.log(r, "isAreaExis1tisAreaExis1t")
-          r = r.filter(x => !isAreaExis1t.includes(x));
-          console.log(r, "isAreaExis1tisAreaExis1t 111")
-          sealing_str = [...sealing_str];
-          sealing_str = sealing_str.filter(x => x !== "PHASE")
-    
-          r1 = [...r1, ...isAreaExis1t, ...areaExist2];
-          r = r.map(x => {
-            return removeWordsFromArray(x, removeonlystr)
-          });
-          const nonKhElements = r.filter(element => !element.startsWith("KH") && !element.startsWith("KN"));
-          if (nonKhElements.length > 0) {
-            // Remove any element starting with "kh" from arr and push to arr2
-            r = r.filter(element => {
-              if (element.startsWith("KH") || element.startsWith("KN")) {
-                r1.push(element);
-                return false; // Remove "kh" element from arr
-              }
-              return true; // Keep non-"kh" element in arr
-            });
-          }
-    
-          r = r.filter(x => {
-            console.log(x, "is number")
-            if (/^[0-9]+$/.test(x)) {
-              if ((+x) >= 99) {
-                return true
-              } else {
-                return false
-              }
-            } else {
-              return true
-            }
-          });
-          r = r.filter(
-            (value, index, self) => self.indexOf(value) === index
-          );
-          const nonKhElements1 = r.filter(element => !element.startsWith("KH") && !element.startsWith("KN"));
-    
-          if (nonKhElements1.length === 0) {
-            // alert("kamal")
-            let filter = r1.filter(x => x.startsWith("KH"));
-            console.log(filter, "filterfilterfilter")
-            r.push(...filter);
-            r1 = r1.filter(x => !x.startsWith("KH"));
-          } else {
-            // r = r.filter(element => isNaN(element) || element >= 100);
-          };
-          if (!r.length) {
-            let data = localStorage.getItem('area#');
-            if (data) {
-              data = JSON.parse(data);
-            } else {
-              data = []
-            };
-            let flattenedArray = [].concat(...data);
-            console.log(flattenedArray, "data ...");
-            r = r1;
-            r = r.filter(element => !flattenedArray.includes(element));
-            r = r.filter(element => element.length > 2);
-            r1 = r1.filter(element => !r.includes(element));
-          }
-    
-          r = r.filter(item => {
-            const numericPart = item.match(/\d+/);
-            return numericPart !== null;
-          });
-          const payload = {
-            AUFNR: row.AUFNR,
-            REQUEST_NO: row.REQUEST_NO,
-            BUKRS: row.BUKRS,
-            VAPLZ: row.VAPLZ,
-            NAME: row.NAME,
-            TEL_NUMBER: row.TEL_NUMBER,
-            E_MAIL: row.E_MAIL,
-            ILART: row.ILART,
-            SAP_ADDRESS: row.SAP_ADDRESS,
-            finalStr: r,
-            sealing_str,
-            secondFinalStr: r1
-          };
-          let splitedNumeric = []
-          r.map(x => {
-            if (x) {
-              let word = splitStringByNumericBetweenAlphabets(x);
-              splitedNumeric.push(...word);
-            }
-          })
-          let finalSplitWords = []
-          r.map(x => {
-            if (x) {
-              let match = x.match(/([0-9]+)([A-Za-z]+)([0-9]+)/);
-              if (match) {
-                let numericPart1 = match[1];
-                let alphabeticPart = match[2];
-                let numericPart2 = match[3];
-                finalSplitWords.push(`${numericPart1}${alphabeticPart}`, `${alphabeticPart}${numericPart2}`)
-              } else {
-                finalSplitWords.push(x)
-                console.log("No match found");
-    
-              }
-            }
-          });
-          finalSplitWords = finalSplitWords.filter(x => !x.startsWith("1100"));
-          payload.secondFinalStr = payload.secondFinalStr.filter(x => !x.startsWith("1100"));
-          payload.secondFinalStr = removeSpecialCharsFromArray(payload.secondFinalStr);
-    
-          payload.finalStr = finalSplitWords;
-          let ndstr = [];
-          let khExist = payload.secondFinalStr.filter(x => x.startsWith("KH"));
-          if (khExist.length) payload.finalStr = [];
-          payload.secondFinalStr.map(x => {
-            if (x.startsWith("KH")) {
-              payload.finalStr.push(x)
-            } else {
-              ndstr.push(x)
-            }
-          });
-          payload.secondFinalStr = ndstr;
-          payload['addr'] = row;
-          localStorage.setItem('searchStr', JSON.stringify(payload));
-          try {
-            let response = await fetch(`${url.API_url}/api/search`, {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(payload),
-            });
-            if (!response.ok) {
-              throw new Error(`HTTP error! Status: ${response.status}`);
-            }
-            let data = await response.json();
-            row.final = data.results_count;
-            if (data.count <= 2000) {
-              saveExistRes[`${row.AUFNR}`] = data.results_count;
-            }
-            saveExistRes[`${row.AUFNR}_count`] = data.count;
-            addr.push(row);
-            const endTime = new Date();
-            const timeElapsedInMilliseconds = endTime - startTime;
-            const minutes = Math.floor(timeElapsedInMilliseconds / 60000);
-            const seconds = Math.floor((timeElapsedInMilliseconds % 60000) / 1000);
-            const milliseconds = (timeElapsedInMilliseconds % 1000).toString().padStart(3, '0').slice(0, 2);
-            const formattedTime = `${minutes.toString().padStart(2, '0')} minutes, ${seconds.toString().padStart(2, '0')} seconds, ${milliseconds} milliseconds`;
-    
-            let obj = {
-              "obj": {
-                "LogTextMain": finalStr.join(','),
-                "logTextAndSrc": uniqueArray1.join(','),
-                "MethodName": "AUTO-MODE",
-                "SolrSearchTime": formattedTime,
-                "REQUEST": row.AUFNR,
-                "refineStr": data.refine_str,
-                result_count: '' + data.count,
-                IP_address: ipAddress
-              }
-            };
-            setSearchLogs(obj);
-            localStorage.setItem('sealing_data_1', JSON.stringify(data.sealing_data))
-          } catch (error) {
-            console.error("Error in one or more requests:", error);
-            // Show an error toast
-            toast.error("Error in one or more requests. Search Process is complete.");
-          }
-        });
-    
-        // Use Promise.all to wait for all promises to resolve
-        await Promise.all(requestPromises);
-        localStorage.removeItem('existingResult');
-    
-        localStorage.setItem('saveExistRes', JSON.stringify(saveExistRes));
-        navigate('/output');
-      };
-    const handleSearchMatchingAddresses1 = async () => {
-        // Clear and set initial local storage values
-        localStorage.setItem("selectedRows_1", JSON.stringify([]));
-        localStorage.setItem("selectedMatchedRows", JSON.stringify(selectedRows));
-
-        // Check if any rows are selected
-        if (selectedRows.length === 0) {
             console.warn("No rows selected. Please select one or more rows.");
             toast.error("Please select a case to start searching");
             return;
         }
 
-        // Initialize variables
-        const saveExistRes = {};
-        const addr = [];
-
-        // Define a function to log search information in mongoDB
         function setSearchLogs(payload) {
+            let usertype = localStorage.getItem("user") || "undefined"
+            payload['usertype'] = usertype;
             fetch(`${url.API_url}/api/create_log`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify(payload),
-            }).then((response) => response.json());
+            })
+                .then((response) => response.json())
         }
-        // Perform search for each selected row
-        await Promise.all(
-            selectedRows.map(async (row) => {
-                // Perform address search algorithm
-                let finalStr = await searchMatchingResultAlgoAgain(row.SAP_ADDRESS, []);
-                console.log("final String : ", finalStr);
-                //this function will check whether the word includes some exclude_terms or not
-                function containsWord(word) {
-                    if (word && word.includes("NO")) {
-                        return false;
-                    }
-                    return exclude_terms.some((arrWord) =>
-                        word.includes(arrWord.toUpperCase())
-                    ); //true or false
+        let saveExistRes = {};
+        let addr = [];
+        const requestPromises = selectedRows.map(async (row, index) => {
+            const startTime = new Date();
+            let finalStr = await searchMatchingResultAlgoAgain(row.SAP_ADDRESS, []);
+            // const inputAddress = row.SAP_ADDRESS;
+            function containsWord(word) {
+                if (word && word.includes('NO')) {
+                    return false;
                 }
-                let new_arr = finalStr.filter((x) => !containsWord(x));
-                finalStr = new_arr;
-                const uniqueArray = [...new Set(finalStr)];
-                finalStr = uniqueArray;
-                let secondFinalStr = await searchMatchingResultAlgoAgainForWords(row.SAP_ADDRESS, []);
-                console.log("finalStrings", finalStr, secondFinalStr);
+                return exclude_terms.some(arrWord => word.includes(arrWord.toUpperCase()))
+            }
 
-                let uniqueArray1 = [...new Set(secondFinalStr)];
-                uniqueArray1 = uniqueArray1.map((x) => x.toUpperCase());
-                console.log(finalStr, "kaml sharma", uniqueArray1);
-                let gali_no = finalStr.filter((x) => x.includes("GALI"));
-                finalStr = finalStr.filter((x) => !x.includes("GALI"));
+            let new_arr = finalStr.filter(x => !containsWord(x))
+            finalStr = new_arr;
+            const uniqueArray = [...new Set(finalStr)];
+            finalStr = uniqueArray;
+            let secondFinalStr = await searchMatchingResultAlgoAgainForWords(row.SAP_ADDRESS, []);
+            console.log(finalStr, "kaml sharma", secondFinalStr);
 
-                uniqueArray1 = uniqueArray1.filter((x) => !x.includes("GALI"));
-                uniqueArray1.push(...gali_no);
-                uniqueArray1 = uniqueArray1.filter((x) => !x.includes("EXT"));
+            // secondFinalStr = secondFinalStr.filter(x => !containsWord1(x));
+            console.log(finalStr, "kaml sharma `1", secondFinalStr);
 
-                let r = [];
-                let r1 = [];
-                let isAreaExist1 = [];
+            let uniqueArray1 = [...new Set(secondFinalStr)];
+            uniqueArray1 = uniqueArray1.map(x => x.toUpperCase());
+            console.log(finalStr, "kaml sharma", uniqueArray1);
+            let gali_no = finalStr.filter(x => x.includes('GALI'));
+            finalStr = finalStr.filter(x => !x.includes('GALI'));
 
-                finalStr.forEach((x) => {
-                    const prefix = x.match(/^([a-zA-Z]+)(.*)/);
-                    if (prefix && prefix.length) {
-                        let arr = getWordArr(prefix[1], prefix[2]);
-                        let isAreaExist = getWordArr1(prefix[1]);
-                        if (isAreaExist.length) {
-                            isAreaExist1.push(x);
-                            r1.push(x, ...arr);
+            uniqueArray1 = uniqueArray1.filter(x => !x.includes('GALI'))
+
+            uniqueArray1.push(...gali_no);
+            uniqueArray1 = uniqueArray1.filter(x => !x.includes('EXT'));
+
+            let r = [];
+            let r1 = [];
+            let isAreaExis1t = [];
+
+            finalStr.forEach(x => {
+                const prefix = x.match(/^([a-zA-Z]+)(.*)/);
+                if (prefix && prefix.length) {
+                    let arr = getWordArr(prefix[1], prefix[2]);
+                    let isAreaExist = getWordArr1(prefix[1]);
+                    if (isAreaExist.length) {
+                        isAreaExis1t.push(x);
+                        r1.push(x, ...arr)
+                    } else {
+                        console.log(arr, "arrarrarr")
+                        r.push(x, ...arr)
+                    }
+                } else {
+                    r.push(x)
+                }
+            });
+            console.log(r, "qwerty...");
+            let areaExist2 = [];
+            console.log(uniqueArray1, "ajay sir");
+            let removeonlystr = ["dairy", "hn0", "propno", "and"];
+            r.map(x => x = removeWordsFromArray(x, removeonlystr));
+
+            let sealing_str = []
+            uniqueArray1.forEach(x => {
+                const prefix = x.match(/^([a-zA-Z]+)(.*)/);
+                if (prefix && prefix.length) {
+                    let arr = getWordArr(prefix[1], prefix[2]);
+                    let area = getWordArr1(prefix[1]);
+                    if (area.length) {
+                        if (x && x.length <= 3) {
+                            areaExist2.push(x);
+                            sealing_str.push(x);
                         } else {
-                            console.log(arr, "final array ");
-                            r.push(x, ...arr);
+                            let breakword = x.slice(0, 3);
+                            let breakword1 = x.slice(0, 4);
+                            sealing_str.push(x, breakword1);
+                            areaExist2.push(x, breakword)
                         }
-                    } else {
-                        r.push(x);
-                    }
-                });
-                let areaExist2 = [];
-                let removeonlystr = ["dairy", "hn0", "propno", "and"];
-                r.map((x) => (x = removeWordsFromArray(x, removeonlystr)));
 
-                let sealing_str = [];
-                uniqueArray1.forEach((x) => {
-                    const prefix = x.match(/^([a-zA-Z]+)(.*)/);
-                    if (prefix && prefix.length) {
-                        let arr = getWordArr(prefix[1], prefix[2]);
-                        let area = getWordArr1(prefix[1]);
-                        if (area.length) {
-                            if (x && x.length <= 3) {
-                                areaExist2.push(x);
-                                sealing_str.push(x);
-                            } else {
-                                let breakword = x.slice(0, 3);
-                                let breakword1 = x.slice(0, 4);
-                                sealing_str.push(x, breakword1);
-                                areaExist2.push(x, breakword);
-                            }
-                        } else {
-                            console.log(arr, "array");
-                            r1.push(x, ...arr);
-                        }
                     } else {
-                        r1.push(x);
+                        console.log(arr, "array")
+                        r1.push(x, ...arr)
                     }
-                });
-                r = r.filter((x) => !isAreaExist1.includes(x));
-                console.log(r, "isAreaExist");
-                sealing_str = [...sealing_str];
-                sealing_str = sealing_str.filter((x) => x !== "PHASE");
-                r1 = [...r1, ...isAreaExist1, ...areaExist2];
-                r = r.map((x) => {
-                    return removeWordsFromArray(x, removeonlystr);
-                });
-                const nonKhElements = r.filter(
-                    (element) => !element.startsWith("KH") && !element.startsWith("KN")
-                );
-                if (nonKhElements.length > 0) {
-                    // Remove any element starting with "kh" from arr and push to arr2
-                    r = r.filter((element) => {
-                        if (element.startsWith("KH") || element.startsWith("KN")) {
-                            r1.push(element);
-                            return false; // Remove "kh" element from arr
-                        }
-                        return true; // Keep non-"kh" element in arr
-                    });
+                } else {
+                    r1.push(x)
                 }
+            });
 
-                r = r.filter((x) => {
-                    console.log(x, "is number");
-                    if (/^[0-9]+$/.test(x)) {
-                        if (+x >= 99) {
-                            return true;
-                        } else {
-                            return false;
-                        }
-                    } else {
-                        return true;
+            console.log(r, "isAreaExis1tisAreaExis1t")
+            r = r.filter(x => !isAreaExis1t.includes(x));
+            console.log(r, "isAreaExis1tisAreaExis1t 111")
+            sealing_str = [...sealing_str];
+            sealing_str = sealing_str.filter(x => x !== "PHASE")
+
+            r1 = [...r1, ...isAreaExis1t, ...areaExist2];
+            r = r.map(x => {
+                return removeWordsFromArray(x, removeonlystr)
+            });
+            const nonKhElements = r.filter(element => !element.startsWith("KH") && !element.startsWith("KN"));
+            if (nonKhElements.length > 0) {
+                // Remove any element starting with "kh" from arr and push to arr2
+                r = r.filter(element => {
+                    if (element.startsWith("KH") || element.startsWith("KN")) {
+                        r1.push(element);
+                        return false; // Remove "kh" element from arr
                     }
+                    return true; // Keep non-"kh" element in arr
                 });
-                r = r.filter((value, index, self) => self.indexOf(value) === index);
-                const nonKhElements1 = r.filter(
-                    (element) => !element.startsWith("KH") && !element.startsWith("KN")
-                );
+            }
 
-                if (nonKhElements1.length === 0) {
-                    // alert("kamal")
-                    let filter = r1.filter((x) => x.startsWith("KH"));
-                    console.log(filter, "filtered khasra no");
-                    r.push(...filter);
-                    r1 = r1.filter((x) => !x.startsWith("KH"));
-                }
-                if (!r.length) {
-                    let data = localStorage.getItem("area#");
-                    if (data) {
-                        data = JSON.parse(data);
+            r = r.filter(x => {
+                console.log(x, "is number")
+                if (/^[0-9]+$/.test(x)) {
+                    if ((+x) >= 99) {
+                        return true
                     } else {
-                        data = [];
+                        return false
                     }
-                    let flattenedArray = [].concat(...data);
-                    console.log(flattenedArray, "data ...");
-                    r = r1;
-                    r = r.filter((element) => !flattenedArray.includes(element));
-                    r = r.filter((element) => element.length > 2);
-                    r1 = r1.filter((element) => !r.includes(element));
+                } else {
+                    return true
                 }
+            });
+            r = r.filter(
+                (value, index, self) => self.indexOf(value) === index
+            );
+            const nonKhElements1 = r.filter(element => !element.startsWith("KH") && !element.startsWith("KN"));
 
-                r = r.filter((item) => {
-                    const numericPart = item.match(/\d+/);
-                    return numericPart !== null;
-                });
-                // Prepare payload for search API
-                const payload = {
-                    AUFNR: row.AUFNR,
-                    REQUEST_NO: row.REQUEST_NO,
-                    BUKRS: row.BUKRS,
-                    VAPLZ: row.VAPLZ,
-                    NAME: row.NAME,
-                    TEL_NUMBER: row.TEL_NUMBER,
-                    E_MAIL: row.E_MAIL,
-                    ILART: row.ILART,
-                    SAP_ADDRESS: row.SAP_ADDRESS,
-                    finalStr: r,
-                    sealing_str,
-                    secondFinalStr: r1
+            if (nonKhElements1.length === 0) {
+                // alert("kamal")
+                let filter = r1.filter(x => x.startsWith("KH"));
+                console.log(filter, "filterfilterfilter")
+                r.push(...filter);
+                r1 = r1.filter(x => !x.startsWith("KH"));
+            } else {
+                // r = r.filter(element => isNaN(element) || element >= 100);
+            };
+            if (!r.length) {
+                let data = localStorage.getItem('area#');
+                if (data) {
+                    data = JSON.parse(data);
+                } else {
+                    data = []
                 };
-                let splitedNumeric = []
-                r.map(x => {
-                    if (x) {
-                        let word = splitStringByNumericBetweenAlphabets(x);
-                        splitedNumeric.push(...word);
-                    }
-                })
-                let finalSplitWords = []
-                r.map(x => {
-                    if (x) {
-                        let match = x.match(/([0-9]+)([A-Za-z]+)([0-9]+)/);
-                        if (match) {
-                            let numericPart1 = match[1];
-                            let alphabeticPart = match[2];
-                            let numericPart2 = match[3];
-                            finalSplitWords.push(`${numericPart1}${alphabeticPart}`, `${alphabeticPart}${numericPart2}`)
-                        } else {
-                            finalSplitWords.push(x)
-                            console.log("No match found");
+                let flattenedArray = [].concat(...data);
+                console.log(flattenedArray, "data ...");
+                r = r1;
+                r = r.filter(element => !flattenedArray.includes(element));
+                r = r.filter(element => element.length > 2);
+                r1 = r1.filter(element => !r.includes(element));
+            }
 
-                        }
-                    }
-                });
-                finalSplitWords = finalSplitWords.filter(x => !x.startsWith("1100"));
-                payload.secondFinalStr = payload.secondFinalStr.filter(x => !x.startsWith("1100"));
-                payload.secondFinalStr = removeSpecialCharsFromArray(payload.secondFinalStr);
-
-                payload.finalStr = finalSplitWords;
-                let ndstr = [];
-                let khExist = payload.secondFinalStr.filter(x => x.startsWith("KH"));
-                if (khExist.length) payload.finalStr = [];
-                payload.secondFinalStr.map(x => {
-                    if (x.startsWith("KH")) {
-                        payload.finalStr.push(x)
-                    } else {
-                        ndstr.push(x)
-                    }
-                });
-                payload.secondFinalStr = ndstr;
-                payload['addr'] = row;
-                localStorage.setItem('searchStr', JSON.stringify(payload));
-
-                // Send search request to the API
-                try {
-                    const response = await fetch(`${url.API_url}/api/search`, {
-                        method: "POST",
-                        headers: {
-                            "Content-Type": "application/json",
-                        },
-                        body: JSON.stringify(payload),
-                    });
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-
-                    const data = await response.json();
-                    row.final = data.results_count;
-                    // Save results for further processing
-                    if (data.count <= 1000) {
-                        saveExistRes[`${row.AUFNR}`] = data.results_count;
-                    }
-                    saveExistRes[`${row.AUFNR}_count`] = data.count;
-                    addr.push(row);
-
-                    // Log search information
-                    console.log("Before setting manual:", row);
-                    localStorage.setItem("manual", JSON.stringify(row));
-                    console.log("After setting manual:", row);
-                    
-                    //save Sealing data in local storage
-                    localStorage.setItem(
-                        "sealing_data_1",
-                        JSON.stringify(data.sealing_data)
-                    );
-                } catch (error) {
-                    console.error("Error in one or more requests:", error);
-                    toast.error(
-                        "Error in one or more requests. Search Process is not complete."
-                    );
+            r = r.filter(item => {
+                const numericPart = item.match(/\d+/);
+                return numericPart !== null;
+            });
+            const payload = {
+                AUFNR: row.AUFNR,
+                REQUEST_NO: row.REQUEST_NO,
+                BUKRS: row.BUKRS,
+                VAPLZ: row.VAPLZ,
+                NAME: row.NAME,
+                TEL_NUMBER: row.TEL_NUMBER,
+                E_MAIL: row.E_MAIL,
+                ILART: row.ILART,
+                SAP_ADDRESS: row.SAP_ADDRESS,
+                finalStr: r,
+                sealing_str,
+                secondFinalStr: r1
+            };
+            let splitedNumeric = []
+            r.forEach(x => {
+                if (x) {
+                    let word = splitStringByNumericBetweenAlphabets(x);
+                    splitedNumeric.push(...word);
                 }
             })
-        );
-        // Save results and navigate to the output page
-        localStorage.removeItem("existingResult");
-        localStorage.setItem("saveExistRes", JSON.stringify(saveExistRes));
-        navigate("/output");
+            let finalSplitWords = []
+            r.forEach(x => {
+                if (x) {
+                    let match = x.match(/([0-9]+)([A-Za-z]+)([0-9]+)/);
+                    if (match) {
+                        let numericPart1 = match[1];
+                        let alphabeticPart = match[2];
+                        let numericPart2 = match[3];
+                        finalSplitWords.push(`${numericPart1}${alphabeticPart}`, `${alphabeticPart}${numericPart2}`)
+                    } else {
+                        finalSplitWords.push(x)
+                        console.log("No match found");
+
+                    }
+                }
+            });
+            finalSplitWords = finalSplitWords.filter(x => !x.startsWith("1100"));
+            payload.secondFinalStr = payload.secondFinalStr.filter(x => !x.startsWith("1100"));
+            payload.secondFinalStr = removeSpecialCharsFromArray(payload.secondFinalStr);
+
+            payload.finalStr = finalSplitWords;
+            let ndstr = [];
+            let khExist = payload.secondFinalStr.filter(x => x.startsWith("KH"));
+            if (khExist.length) payload.finalStr = [];
+            payload.secondFinalStr.map(x => { 
+                if (x.startsWith("KH")) {
+                    payload.finalStr.push(x);
+                    return null; // Returning null to indicate that the element was processed
+                } else {
+                    ndstr.push(x);
+                    return x; // Returning the element itself
+                }
+            });
+            
+            payload.secondFinalStr = ndstr;
+            payload['addr'] = row;
+            localStorage.setItem('searchStr', JSON.stringify(payload));
+            try {
+                let response = await fetch(`${url.API_url}/api/search`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(payload),
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                let data = await response.json();
+                console.log("Dues and mcd cases : ",data);
+                row.final = data.results_count;
+                if (data.count <= 2000) {
+                    saveExistRes[`${row.AUFNR}`] = data.results_count;
+                }
+                saveExistRes[`${row.AUFNR}_count`] = data.count;
+                addr.push(row);
+                const endTime = new Date();
+                const timeElapsedInMilliseconds = endTime - startTime;
+                const minutes = Math.floor(timeElapsedInMilliseconds / 60000);
+                const seconds = Math.floor((timeElapsedInMilliseconds % 60000) / 1000);
+                const milliseconds = (timeElapsedInMilliseconds % 1000).toString().padStart(3, '0').slice(0, 2);
+                const formattedTime = `${minutes.toString().padStart(2, '0')} minutes, ${seconds.toString().padStart(2, '0')} seconds, ${milliseconds} milliseconds`;
+
+                localStorage.setItem('manual', JSON.stringify(row));
+                let obj = {
+                    "obj": {
+                        "LogTextMain": finalStr.join(','),
+                        "logTextAndSrc": uniqueArray1.join(','),
+                        "MethodName": "AUTO-MODE",
+                        "SolrSearchTime": formattedTime,
+                        "REQUEST": row.AUFNR,
+                        "refineStr": data.refine_str,
+                        result_count: '' + data.count,
+                        IP_address: ipAddress
+                    }
+                };
+                setSearchLogs(obj);
+                localStorage.setItem('sealing_data_1', JSON.stringify(data.sealing_data))
+            } catch (error) {
+                console.error("Error in one or more requests:", error);
+                // Show an error toast
+                toast.error("Error in one or more requests. Search Process is complete.");
+            }
+        });
+        // Use Promise.all to wait for all promises to resolve
+        await Promise.all(requestPromises);
+        localStorage.removeItem('existingResult');
+        localStorage.setItem('saveExistRes', JSON.stringify(saveExistRes));
+        navigate('/output');
     };
 
     return (

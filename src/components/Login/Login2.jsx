@@ -11,6 +11,7 @@ const Login2 = () => {
     password: "",
     submitted: false,
   });
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setLoginDetails((prevValue) => ({ ...prevValue, [name]: value }));
@@ -70,6 +71,7 @@ const Login2 = () => {
                 name="email"
                 value={loginDetails.email}
                 onChange={handleChange}
+                required
               />
             </Form.Group>
             <Form.Group className="mb-3" controlId="formBasicPassword">
@@ -81,6 +83,7 @@ const Login2 = () => {
                 name="password"
                 value={loginDetails.password}
                 onChange={handleChange}
+                required
               />
             </Form.Group>
             <Button

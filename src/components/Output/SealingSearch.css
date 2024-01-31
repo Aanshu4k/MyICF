@@ -1,0 +1,10 @@
+.mcd-container{
+    border: 2px solid lightgrey;
+    padding: 15px;
+    border-radius: 10px;
+    margin: 0 8rem;
+}
+tbody{
+    font-size: 14px;
+    line-height: 1rem;
+}
