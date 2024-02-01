@@ -161,7 +161,7 @@ const HomePage = () => {
         setSelectedDivision(""); // Reset selected division
         setCases([]); // Clear cases data
         setCaseCount(0); // Reset case count
-        setDivisions(divisions.map(div=>div)); // Trigger a reset for the division dropdown
+        setDivisions(divisions.map(div => div)); // Trigger a reset for the division dropdown
         setShowTable(false);
     };
     let findLastLongestWord = (str) => {
@@ -461,98 +461,75 @@ const HomePage = () => {
         const resultArray = array.map(str => str.replace(/[^\w\s]/g, ''));
         return resultArray;
     }
-    const searchMatchingResultAlgoAgainForWords = async (
-        address,
-        data,
-        finalArar
-    ) => {
+    const searchMatchingResultAlgoAgainForWords = async (address) => {
         return new Promise(async (res, rej) => {
             try {
                 let sap_address = address;
                 sap_address = addCommaAfterSpace(sap_address);
                 let filteredSapAddress = sap_address;
-                filteredSapAddress = filteredSapAddress.replace(
-                    /([a-zA-Z0-9])-*, *([a-zAZ0-9])/g,
-                    "$1, $2"
-                );
-                exclude_terms1.forEach((term) => {
-                    const regex = new RegExp(`\\b${term}\\b`, "gi");
-                    filteredSapAddress = filteredSapAddress.replace(regex, "");
+                filteredSapAddress = filteredSapAddress.replace(/([a-zA-Z0-9])-*, *([a-zAZ0-9])/g, '$1, $2');
+                exclude_terms1.forEach(term => {
+                    const regex = new RegExp(`\\b${term}\\b`, 'gi');
+                    filteredSapAddress = filteredSapAddress.replace(regex, '');
                 });
 
-                filteredSapAddress = filteredSapAddress.replace(/[^\w\s-/()]/g, "");
+                filteredSapAddress = filteredSapAddress.replace(/[^\w\s-/()]/g, '');
+
                 // Add space before opening parenthesis
-                filteredSapAddress = filteredSapAddress.replace(/(\()/g, " $1");
+                filteredSapAddress = filteredSapAddress.replace(/(\()/g, ' $1');
 
                 // Add space after closing parenthesis
-                filteredSapAddress = filteredSapAddress.replace(/(\))/g, "$1 ");
-                filteredSapAddress = filteredSapAddress.replace(/[()]/g, "");
+                filteredSapAddress = filteredSapAddress.replace(/(\))/g, '$1 ');
+                filteredSapAddress = filteredSapAddress.replace(/[()]/g, '');
 
-                filteredSapAddress = filteredSapAddress.split(/\s+/).join(" ");
+                filteredSapAddress = filteredSapAddress.split(/\s+/).join(' ');
 
-                let searchWords = filteredSapAddress.split(" ");
+                let searchWords = filteredSapAddress.split(' ');
 
-                searchWords = searchWords.filter((x) => x !== "");
+                searchWords = searchWords.filter(x => x !== "")
                 console.log(searchWords, "filteredSapAddress");
 
-                let longestWord = searchWords.reduce(
-                    (prev, current) => (current.length > prev.length ? current : prev),
-                    ""
-                );
+                let longestWord = searchWords.reduce((prev, current) => (current.length > prev.length ? current : prev), '');
                 let lastLongestWord = await findLastLongestWord(sap_address);
                 searchWords.splice(searchWords.indexOf(longestWord), 1);
-                let secondLongestWord = searchWords.reduce(
-                    (prev, current) => (current.length > prev.length ? current : prev),
-                    ""
+                let secondLongestWord = searchWords.reduce((prev, current) =>
+                    current.length > prev.length ? current : prev,
+                    ''
                 );
 
+                console.log(searchWords, longestWord, lastLongestWord, secondLongestWord, "word Array");
+
                 searchWords.splice(searchWords.indexOf(secondLongestWord), 1);
-                let thirdLongestWord = searchWords.reduce(
-                    (prev, current) => (current.length > prev.length ? current : prev),
-                    ""
+                let thirdLongestWord = searchWords.reduce((prev, current) =>
+                    current.length > prev.length ? current : prev,
+                    ''
                 );
 
                 searchWords.splice(searchWords.indexOf(thirdLongestWord), 1);
 
-                let fourLongestWord = searchWords.reduce(
-                    (prev, current) => (current.length > prev.length ? current : prev),
-                    ""
+                let fourLongestWord = searchWords.reduce((prev, current) =>
+                    current.length > prev.length ? current : prev,
+                    ''
                 );
 
                 searchWords.splice(searchWords.indexOf(fourLongestWord), 1);
-
-                let fiveLongestWord = searchWords.reduce(
-                    (prev, current) => (current.length > prev.length ? current : prev),
-                    ""
+                let fiveLongestWord = searchWords.reduce((prev, current) =>
+                    current.length > prev.length ? current : prev,
+                    ''
                 );
 
-                let final_array_of_words = [
-                    longestWord,
-                    lastLongestWord,
-                    secondLongestWord,
-                    thirdLongestWord,
-                    longestWord,
-                    fiveLongestWord,
-                ];
+                let final_array_of_words = [longestWord, lastLongestWord, secondLongestWord, thirdLongestWord, longestWord, fiveLongestWord];
+                console.log(final_array_of_words, fiveLongestWord, "final words array")
+                final_array_of_words = final_array_of_words.filter(word => {
+                    if (/\d/.test(word)) {
+                        return false;
+                    }
+                    return true;
+                }).map(word => word.toLowerCase());
+                console.log(exclude_terms1, "exclude_terms1")
+                let send_to_backend = final_array_of_words.filter(item => !exclude_terms1.includes(item) && item !== "");
 
-                final_array_of_words = final_array_of_words
-                    .filter((word) => {
-                        if (/\d/.test(word)) {
-                            return false;
-                        }
-                        return true;
-                    })
-                    .map((word) => word.toLowerCase());
-                console.log(exclude_terms1, "exclude_terms1");
-                let send_to_backend = final_array_of_words.filter(
-                    (item) => !exclude_terms1.includes(item) && item !== ""
-                );
-                console.log(
-                    send_to_backend,
-                    fiveLongestWord,
-                    "send_to_backendsend_to_backend"
-                );
-                send_to_backend = send_to_backend.filter((word) => word.length >= 3);
+                send_to_backend = send_to_backend.filter(word => word.length >= 3);
                 res(send_to_backend);
             } catch (error) {
                 console.log(error);
@@ -560,6 +537,7 @@ const HomePage = () => {
             }
         });
     };
+
     const handleSearchMatchingAddresses = async () => {
         localStorage.setItem('selectedRows_1', JSON.stringify([]));
         localStorage.setItem('selectedMatchedRows', JSON.stringify(selectedRows));
@@ -572,7 +550,7 @@ const HomePage = () => {
         function setSearchLogs(payload) {
             let usertype = localStorage.getItem("user") || "undefined"
             payload['usertype'] = usertype;
-            fetch(`${url.API_url}/api/create_log`, {
+            const requestPromise = fetch(`${url.API_url}/api/create_log`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -580,38 +558,38 @@ const HomePage = () => {
                 body: JSON.stringify(payload),
             })
                 .then((response) => response.json())
+                .then(async (data) => {
+
+                })
         }
+        const requests = [];
         let saveExistRes = {};
         let addr = [];
         const requestPromises = selectedRows.map(async (row, index) => {
             const startTime = new Date();
             let finalStr = await searchMatchingResultAlgoAgain(row.SAP_ADDRESS, []);
-            // const inputAddress = row.SAP_ADDRESS;
+            const inputAddress = row.SAP_ADDRESS;
             function containsWord(word) {
                 if (word && word.includes('NO')) {
                     return false;
                 }
                 return exclude_terms.some(arrWord => word.includes(arrWord.toUpperCase()))
             }
-
             let new_arr = finalStr.filter(x => !containsWord(x))
             finalStr = new_arr;
             const uniqueArray = [...new Set(finalStr)];
             finalStr = uniqueArray;
             let secondFinalStr = await searchMatchingResultAlgoAgainForWords(row.SAP_ADDRESS, []);
-            console.log(finalStr, "kaml sharma", secondFinalStr);
-
-            // secondFinalStr = secondFinalStr.filter(x => !containsWord1(x));
-            console.log(finalStr, "kaml sharma `1", secondFinalStr);
-
+            console.log("Second FinalStr : ", secondFinalStr)
             let uniqueArray1 = [...new Set(secondFinalStr)];
             uniqueArray1 = uniqueArray1.map(x => x.toUpperCase());
-            console.log(finalStr, "kaml sharma", uniqueArray1);
+            console.log("Final Str : ", finalStr);
+            console.log("Unique Array 1 : ", uniqueArray1)
+
             let gali_no = finalStr.filter(x => x.includes('GALI'));
             finalStr = finalStr.filter(x => !x.includes('GALI'));
 
             uniqueArray1 = uniqueArray1.filter(x => !x.includes('GALI'))
-
             uniqueArray1.push(...gali_no);
             uniqueArray1 = uniqueArray1.filter(x => !x.includes('EXT'));
 
@@ -627,22 +605,22 @@ const HomePage = () => {
                     if (isAreaExist.length) {
                         isAreaExis1t.push(x);
                         r1.push(x, ...arr)
-                    } else {
-                        console.log(arr, "arrarrarr")
+                    }
+                    else {
                         r.push(x, ...arr)
                     }
-                } else {
+                }
+                else {
                     r.push(x)
                 }
             });
-            console.log(r, "qwerty...");
             let areaExist2 = [];
-            console.log(uniqueArray1, "ajay sir");
             let removeonlystr = ["dairy", "hn0", "propno", "and"];
             r.map(x => x = removeWordsFromArray(x, removeonlystr));
 
             let sealing_str = []
             uniqueArray1.forEach(x => {
+                console.log("Unique Array 1 : ",x)
                 const prefix = x.match(/^([a-zA-Z]+)(.*)/);
                 if (prefix && prefix.length) {
                     let arr = getWordArr(prefix[1], prefix[2]);
@@ -667,9 +645,9 @@ const HomePage = () => {
                 }
             });
 
-            console.log(r, "isAreaExis1tisAreaExis1t")
+            console.log(r, "isAreaExist")
             r = r.filter(x => !isAreaExis1t.includes(x));
-            console.log(r, "isAreaExis1tisAreaExis1t 111")
+            console.log(r, "isAreaExist2")
             sealing_str = [...sealing_str];
             sealing_str = sealing_str.filter(x => x !== "PHASE")
 
@@ -707,7 +685,6 @@ const HomePage = () => {
             const nonKhElements1 = r.filter(element => !element.startsWith("KH") && !element.startsWith("KN"));
 
             if (nonKhElements1.length === 0) {
-                // alert("kamal")
                 let filter = r1.filter(x => x.startsWith("KH"));
                 console.log(filter, "filterfilterfilter")
                 r.push(...filter);
@@ -748,15 +725,17 @@ const HomePage = () => {
                 sealing_str,
                 secondFinalStr: r1
             };
+            console.log("PAYLOAD FOR SEARCH DATA : ", payload)
             let splitedNumeric = []
-            r.forEach(x => {
+            r.map(x => {
                 if (x) {
                     let word = splitStringByNumericBetweenAlphabets(x);
                     splitedNumeric.push(...word);
                 }
+                return null;
             })
             let finalSplitWords = []
-            r.forEach(x => {
+            r.map(x => {
                 if (x) {
                     let match = x.match(/([0-9]+)([A-Za-z]+)([0-9]+)/);
                     if (match) {
@@ -770,6 +749,7 @@ const HomePage = () => {
 
                     }
                 }
+                return null;
             });
             finalSplitWords = finalSplitWords.filter(x => !x.startsWith("1100"));
             payload.secondFinalStr = payload.secondFinalStr.filter(x => !x.startsWith("1100"));
@@ -779,16 +759,13 @@ const HomePage = () => {
             let ndstr = [];
             let khExist = payload.secondFinalStr.filter(x => x.startsWith("KH"));
             if (khExist.length) payload.finalStr = [];
-            payload.secondFinalStr.map(x => { 
+            payload.secondFinalStr.map(x => {
                 if (x.startsWith("KH")) {
-                    payload.finalStr.push(x);
-                    return null; // Returning null to indicate that the element was processed
+                    payload.finalStr.push(x)
                 } else {
-                    ndstr.push(x);
-                    return x; // Returning the element itself
+                    ndstr.push(x)
                 }
             });
-            
             payload.secondFinalStr = ndstr;
             payload['addr'] = row;
             localStorage.setItem('searchStr', JSON.stringify(payload));
@@ -804,7 +781,7 @@ const HomePage = () => {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
                 let data = await response.json();
-                console.log("Dues and mcd cases : ",data);
+                console.log("Search API response  : ", data);
                 row.final = data.results_count;
                 if (data.count <= 2000) {
                     saveExistRes[`${row.AUFNR}`] = data.results_count;
@@ -839,11 +816,14 @@ const HomePage = () => {
                 toast.error("Error in one or more requests. Search Process is complete.");
             }
         });
+
         // Use Promise.all to wait for all promises to resolve
         await Promise.all(requestPromises);
         localStorage.removeItem('existingResult');
+
         localStorage.setItem('saveExistRes', JSON.stringify(saveExistRes));
         navigate('/output');
+
     };
 
     return (

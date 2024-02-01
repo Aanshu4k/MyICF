@@ -5,11 +5,12 @@ import Button from "react-bootstrap/Button";
 import Tab from "react-bootstrap/Tab";
 import Tabs from "react-bootstrap/Tabs";
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from "react-router-dom";
-
+import { useParams } from "react-router-dom";
+let url=require('../config.json')
 const SealingSearch = () => {
   const [aufnr_1, setAufnr_1] = useState({});
   const { aufnr } = useParams();
+  const [divisions, setDivisions] = useState([]);
   const [caseData, setCaseData] = useState({});
   const [searchResults, setSearchResults] = useState([]);
   const [existingResult, setExistingResult] = useState([]);
@@ -50,6 +51,7 @@ const SealingSearch = () => {
       });
 
       const apiResponse = await data.json();
+      console.log("ICF DATA RESPONSE : ", apiResponse);
       if (apiResponse) {
         const responseData = apiResponse.data;
         const duesData = responseData.duesData || [];
@@ -57,11 +59,8 @@ const SealingSearch = () => {
         setDuesData_(responseData)
         if (responseData.tpye && responseData.tpye === 2) {
           setDuesSearchComplete_2(true);
-
         } else {
-
           setDuesSearchComplete_2(0);
-
         }
         if (duesData.length && responseData.tpye && responseData.tpye === 2) {
           setDuesSearchComplete_1(true);
@@ -86,8 +85,29 @@ const SealingSearch = () => {
       console.error('Error fetching IP address:', error);
     }
   };
+  const fetchDivisions = () => {
+    fetch(`${url.API_url}/api/divisions_on_page_load1`)
+      .then((response) => response.json())
+      .then((data) => {
+        let arr = []
+        if (data.data) {
+          data.data.forEach(x => {
+            arr.push({
+              value: x.VAPLZ,
+              label: x.VAPLZ
+            })
+          })
+        }
+        console.log("Divisions : ",arr)
+        setDivisions(arr);
+      })
+      .catch((error) => {
+        console.error("Error fetching divisions:", error);
+      });
+  };
   useEffect(() => {
     fetchIpAddress();
+    fetchDivisions();
   }, []);
   const handleRowClick = (row, e) => {
     console.log(e.target.checked, "e.target.checked");
@@ -172,6 +192,26 @@ const SealingSearch = () => {
 
     }
   };
+  const handleFilterByBPType = (bpType) => {
+    if (!bpType) {
+      setSearchResults(searchResults1);
+      let obj = getCounts(searchResultsOther);
+      setCounts(obj)
+      console.log("final ...")
+      return
+    }
+    // Filter the data based on the selected BP_TYPE
+    let filteredData = searchResults1;
+    if (bpType === "auto") {
+      filteredData = searchResults1.filter((item) => item.SEARCH_MODE === 'AUTO-MODE')
+    }
+    if (bpType === "manual") {
+      filteredData = searchResults1.filter((item) => item.SEARCH_MODE !== 'MANUAL-MODE')
+    }
+    setSearchResults(filteredData);
+    let obj = getCounts(searchResultsOther);
+    setCounts(obj);
+  };
   return (
     <div className="mcd-container">
       <Table striped bordered hover responsive>
@@ -196,105 +236,95 @@ const SealingSearch = () => {
           </tr>
         </tbody>
       </Table>
-      <Tabs defaultActiveKey="auto" id="mcd-tabs" className="p-3">
-        <Tab eventKey="auto" title="Auto Count MCD: 70">
-          <Table striped bordered hover>
-            <thead>
-              <tr>
-                <th style={{ whiteSpace: 'nowrap', width: '5%' }}>
-                  <input onChange={(e) => handleRowClick_1(e)} type="checkbox" name="" />
-                </th>
-                <th style={{ width: '5%' }}>MODE</th>
-                <th style={{ whiteSpace: 'nowrap', width: '3%' }}>DUES</th>
-                <th style={{ width: '10%' }}>MOVE OUT DATE</th>
-                <th style={{ width: '10%' }}>ACCOUNT CLASS</th>
-                <th style={{ width: '4%' }}>BP TYPE</th>
-                <th style={{ width: '5%' }}>CA NUMBER</th>
-                <th style={{ width: '5%' }}>CSTS CD</th>
-                <th style={{ whiteSpace: 'nowrap', maxWidth: '15%', width: '15%' }}>CONSUMER NAME</th>
-                <th style={{ width: '40%', textAlign: 'left' }} className="text-left">
-                  CONSUMER ADDRESS
-                </th>
-                <th style={{ width: '10%' }}>POLE ID</th>
-                <th style={{ width: '10%' }}>TARIFF CATEGORY</th>
-              </tr>
-            </thead>
-            <tbody>
-              {searchResults.map((result, index) => {
-                const isResultInExisting = existingResult.some(
-                  (existingRow) => existingRow === result.CONS_REF
-                );
+      <div style={{ textAlign: 'center' }}>
+        <b>
+          <a href><span className="auto" onClick={() => handleFilterByBPType('auto')}>AUTO COUNT MCD : {auto_count}</span> </a>{" "}
+          <a href><span className="manual" onClick={() => handleFilterByBPType('auto')}>MANUAL COUNT MCD : {manual_count}</span></a>
+          <span>{!isDuesSearchComplete_1 ? "" : "Sent To DSK"}
+            {isDuesSearchComplete_1 && (<i className="fa fa-check" style={{ color: 'green', fontSize: '20px' }} />)}
+          </span>
+        </b>
+      </div>
+      <div className="mcd-cases-table-wrapper">
+        <Table striped bordered hover>
+          <thead>
+            <tr>
+              <th style={{ whiteSpace: 'nowrap', width: '5%' }}>
+                <input onChange={(e) => handleRowClick_1(e)} type="checkbox" name="" />
+              </th>
+              <th style={{ width: '5%' }}>MODE</th>
+              <th style={{ whiteSpace: 'nowrap', width: '3%' }}>DUES</th>
+              <th style={{ width: '10%' }}>MOVE OUT DATE</th>
+              <th style={{ width: '10%' }}>ACCOUNT CLASS</th>
+              <th style={{ width: '4%' }}>BP TYPE</th>
+              <th style={{ width: '5%' }}>CA NUMBER</th>
+              <th style={{ width: '5%' }}>CSTS CD</th>
+              <th style={{ whiteSpace: 'nowrap', maxWidth: '15%', width: '15%' }}>CONSUMER NAME</th>
+              <th style={{ width: '40%' }}>
+                CONSUMER ADDRESS
+              </th>
+              <th style={{ width: '10%' }}>POLE ID</th>
+              <th style={{ width: '10%' }}>TARIFF CATEGORY</th>
+            </tr>
+          </thead>
+          <tbody>
+            {searchResults.map((result, index) => {
+              const isResultInExisting = existingResult.some(
+                (existingRow) => existingRow === result.CONS_REF
+              );
 
-                function formatDateToDDMMYYYY(dateString) {
-                  const date = new Date(dateString);
-                  const day = date.getDate().toString().padStart(2, '0');
-                  const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-based
-                  const year = date.getFullYear();
-                  return `${day}-${month}-${year}`;
-                }
+              function formatDateToDDMMYYYY(dateString) {
+                const date = new Date(dateString);
+                const day = date.getDate().toString().padStart(2, '0');
+                const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Months are 0-based
+                const year = date.getFullYear();
+                return `${day}-${month}-${year}`;
+              }
 
-                return (
-                  <tr key={index}>
-                    <td>
-                      <input
-                        className="check_box"
-                        type="checkbox"
-                        disabled={result.disabled}
-                        onChange={(e) => handleRowClick(result, e)}
-                        checked={selectedRows_1.some((selectedRow) => selectedRow.id === result.id)}
-                      />
-                    </td>
-                    <td>{result.SEARCH_MODE || 'MANUAL-MODE'}</td>
-                    <td>{result.DUES || '-'}</td>
-                    <td>{result.MOVE_OUT ? formatDateToDDMMYYYY(result.MOVE_OUT) : "-"}</td>
-                    <td>{result.SAP_DEPARTMENT}</td>
-                    <td>{result.BP_TYPE}</td>
-                    <td>{result.CONTRACT_ACCOUNT}</td>
-                    <td>{result.CSTS_CD}</td>
-                    <td>{result.SAP_NAME}</td>
-                    <td>{result.SAP_ADDRESS}</td>
-                    <td>{result.SAP_POLE_ID}</td>
-                    <td>{result.TARIFF}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </Table>
-        </Tab>
-        <Tab eventKey="manual" title="Manual Count MCD: 170">
-          <Table striped bordered hover>
-            <thead>
-              <tr>
-                <th>Meter Date</th>
-                <th>Meter Read Date</th>
-                <th>Account Class</th>
-                <th>BP No.</th>
-                <th>CA Number</th>
-                <th>CTS CD</th>
-                <th>Consumer Name</th>
-                <th>Consumer Address</th>
-                <th>Pole Id</th>
-                <th>Tariff Category</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                
-              </tr>
-            </tbody>
-          </Table>
-        </Tab>
-      </Tabs>
+              return (
+                <tr key={index}>
+                  <td>
+                    <input
+                      className="check_box"
+                      type="checkbox"
+                      disabled={result.disabled}
+                      onChange={(e) => handleRowClick(result, e)}
+                      checked={selectedRows_1.some((selectedRow) => selectedRow.id === result.id)}
+                    />
+                  </td>
+                  <td>{result.SEARCH_MODE || 'MANUAL-MODE'}</td>
+                  <td>{result.DUES || '-'}</td>
+                  <td>{result.MOVE_OUT ? formatDateToDDMMYYYY(result.MOVE_OUT) : "-"}</td>
+                  <td>{result.SAP_DEPARTMENT}</td>
+                  <td>{result.BP_TYPE}</td>
+                  <td>{result.CONTRACT_ACCOUNT}</td>
+                  <td>{result.CSTS_CD}</td>
+                  <td>{result.SAP_NAME}</td>
+                  <td>{result.SAP_ADDRESS}</td>
+                  <td>{result.SAP_POLE_ID}</td>
+                  <td>{result.TARIFF}</td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </Table>
+      </div>
+
       <div style={{ display: "flex", border: "2px solid grey", justifyContent: 'space-around' }}>
         <Form className="p-3" >
           <div className="row" style={{ padding: '10px' }}>
             <div className="col-md-6">
               <Form.Group controlId="division">
-                <Form.Select placeholder="Select Division">
-                  <option value="division1">Select Division</option>
-                  <option value="division1">Division 1</option>
-                  <option value="division2">Division 2</option>
-                  <option value="division3">Division 3</option>
+                <Form.Select
+                  value={divisions}
+                  onChange={(e) => setDivisions(e.target.value)}
+                >
+                  <option value="">Select a division</option>
+                  {divisions.map((division) => (
+                    <option key={division.value} value={division.value}>
+                      {division.value}
+                    </option>
+                  ))}
                 </Form.Select>
               </Form.Group>
             </div>
@@ -323,7 +353,7 @@ const SealingSearch = () => {
               </Button>
             </div>
           </div>
-        </Form>
+        </Form><hr />
         <div className="p-3">
           <Form style={{ display: 'flex', flexDirection: 'column' }}>
             <div style={{ display: 'flex', alignItems: 'flex-end', margin: '10px 0' }}>
@@ -356,7 +386,7 @@ const SealingSearch = () => {
           </Form>
         </div>
       </div>
-    </div>
+    </div >
   );
 };
 export default SealingSearch;

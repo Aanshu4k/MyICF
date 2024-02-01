@@ -3,10 +3,11 @@ import { useState, useEffect } from 'react';
 import { Row, Col, Form, Button } from 'react-bootstrap';
 import { useParams } from "react-router-dom";
 import './ManualSearch.css';
+const url = require('../config.json');
 const ManualSearch = () => {
     // const navigate = useNavigate();
     const { aufnr } = useParams();
-    // const [aufnr_1, setAufnr_1] = useState({});
+    const [aufnr_1, setAufnr_1] = useState({});
     const [counts, setCounts] = useState({});
     const [existingResult, setExistingResult] = useState([]);
     const [isDuesSearchComplete_1, setDuesSearchComplete_1] = useState(null);
@@ -17,8 +18,14 @@ const ManualSearch = () => {
     const [searchResults1, setSearchResults1] = useState([]); // New state for search results;
     const [searchResults2, setSearchResults2] = useState([]); // New state for search results;
     const [searchResultsOther, setSearchResultsOther] = useState([]); // New state for search results
-    const [casesData, setCaseData] = useState();
+    const [caseData, setCaseData] = useState();
     const [duesRecords, setDuesRecords] = useState([]);
+    let [addressPart1, setAddressPart1] = useState('');
+    let [addressPart2, setAddressPart2] = useState('');
+    let [addressPart3, setAddressPart3] = useState('');
+    const [validated, setValidated] = useState(false);
+    const [isDrop, setIsDrop] = useState(0);
+    const [ipAddress, setIpAddress] = useState(null);
 
     const fetchIpAddress = async () => {
         try {
@@ -110,9 +117,13 @@ const ManualSearch = () => {
         }
     };
     let aufnr_11 = localStorage.getItem('manual');
-    if (aufnr_11) {
-        aufnr_11 = JSON.parse(aufnr_11);
+  if (aufnr_11) {
+    aufnr_11 = JSON.parse(aufnr_11);
+    if (aufnr_1.AUFNR !== aufnr_11.AUFNR) {
+      setAufnr_1(aufnr_11);
+      setCaseData(aufnr_11);
     }
+  }
 
     function setDues() {
         let existingResult = localStorage.getItem("saveExistRes");
@@ -148,12 +159,164 @@ const ManualSearch = () => {
             console.error("AUFNR parameter is missing.");
             return;
         }
-
     }
+    function removeSpecialCharsAndCapitalize(inputString) {
+        // Remove special characters and spaces, but keep numeric characters
+        const cleanedString = inputString.replace(/[^a-zA-Z0-9]/g, '');
+
+        // Capitalize the cleaned string
+        const capitalizedString = cleanedString.toUpperCase();
+
+        return capitalizedString;
+    }
+    function capitalizeWord(word) {
+        if (typeof word !== 'string' || word.length === 0) {
+            return word;
+        }
+        return word.toUpperCase();
+    }
+
+    //insert logs in the mongo db collection logentries
+    function setSearchLogs(payload) {
+        const requestPromise = fetch(`${url.api_url}/api/create_log`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        })
+            .then((response) => response.json())
+            .then(async (data) => {
+            })
+    }
+
+    // Function to handle manual search button click
+    const handleManualSearchClick = () => {
+        if (!addressPart1 && !addressPart2 && !addressPart3) {
+            return;
+        }
+        const startTime = new Date();
+        if (addressPart1)
+            addressPart1 = removeSpecialCharsAndCapitalize(addressPart1);
+        if (addressPart2)
+            addressPart2 = removeSpecialCharsAndCapitalize(addressPart2);
+        if (addressPart3)
+            addressPart3 = removeSpecialCharsAndCapitalize(addressPart3);
+        // Combine the address parts into a single address
+        let str_arr = ["1ST", "I", "2ND", "II", "3RD", "III"];
+        let str_arr1 = ["BLOCK", "BLK", "PLOT", "PLT"];
+        addressPart1 = addressPart1.replace(/[^\w\s]/g, '');
+        addressPart2 = addressPart2.replace(/[^\w\s]/g, '');
+        addressPart3 = addressPart3 ? addressPart3.trim("") : "";
+
+        let complete_addr = capitalizeWord(addressPart1) + '' + capitalizeWord(addressPart2);
+        let words_arr = [complete_addr]
+        for (let index = 0; index < str_arr.length; index++) {
+            const element = str_arr[index];
+            let words = capitalizeWord(addressPart1) + element + capitalizeWord(addressPart2);
+            words_arr.push(words);
+        }
+        for (let index = 0; index < str_arr1.length; index++) {
+            const element = str_arr1[index];
+            let words = capitalizeWord(addressPart1) + element;
+            let words1 = element + capitalizeWord(addressPart1);
+            words_arr.push(words);
+            words_arr.push(words1);
+        }
+        addressPart3 = addressPart3.replace(/[^\w\s-]/g, '');
+        let drop = localStorage.getItem("dropDataList");
+
+        if (drop && drop === 1) {
+            setIsDrop(1);
+        } else {
+            setIsDrop(0);
+        }
+        setExistingResult([]);
+
+        //API call to fetch cases from manually entered input by the User
+        fetch(`${url.API_url}/api/manual_search`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                addressPart1: words_arr,
+                addressPart2: [capitalizeWord(addressPart2)],
+                addressPart3: capitalizeWord(addressPart3),
+                VAPLZ: caseData.VAPLZ, // Assuming division comes from case data
+            }),
+        })
+            .then((response) => response.json())
+            .then(async (data) => {
+                console.log("MANUAL SEARCH DATA : ", data);
+                let finalres = [];
+                data.data = data.results_count;
+                let all_count = data.data.length;
+                if (data.data) {
+                    let existingResult1 = localStorage.getItem("saveExistRes");
+                    if (existingResult1) {
+                        existingResult1 = JSON.parse(existingResult1);
+                        existingResult1 = existingResult1[`${aufnr_1.AUFNR}`];
+                        let exist = [];
+                        if (existingResult1) {
+                            finalres = existingResult1;
+                            let exist = existingResult1.map(x => x.CONTRACT_ACCOUNT);
+                            console.log(exist)
+                            setExistingResult(exist)
+                        }
+                    }
+                };
+                setSearchResults([]);
+                setSearchResults1([]);
+                setSearchResultsOther([])
+                console.log(searchResults.length, "lll", data.data)
+                data.data = data.data.filter(x => !existingResult.includes(x.CONTRACT_ACCOUNT))
+                finalres.forEach(x => {
+                    x.SEARCH_MODE = "AUTO-MODE"
+                })
+                console.log(finalres, "finalres")
+                data.data.push(...finalres);
+                // let dues_filter = data.data.filter(x => x.solr_dues > 500)
+                setSearchResults(data.data);
+                let obj = getCounts(data.data);
+                await setSearchResults1(data.data)
+                await setSearchResultsOther(data.data);
+                setCounts(obj);
+
+                const endTime = new Date();
+                // Calculate the time elapsed in minutes
+                const timeElapsedInMilliseconds = endTime - startTime;
+                const minutes = Math.floor(timeElapsedInMilliseconds / 60000);
+                const seconds = Math.floor((timeElapsedInMilliseconds % 60000) / 1000);
+                const milliseconds = (timeElapsedInMilliseconds % 1000).toString().padStart(3, '0').slice(0, 2); // Truncate to two digits
+
+                const formattedTime = `${minutes.toString().padStart(2, '0')} minutes, ${seconds.toString().padStart(2, '0')} seconds, ${milliseconds} milliseconds`;
+
+                let objs = {
+                    "obj": {
+                        "LogTextMain": words_arr.join(',') + ',' + [addressPart2].join(","),
+                        "logTextAndSrc": [addressPart3].join(','),
+                        "MethodName": "MANUAL-MODE",
+                        "SolrSearchTime": formattedTime,
+                        result_count: '' + all_count,
+                        IP_address: ipAddress,
+                        "REQUEST": caseData.REQUEST_NO
+                    }
+                }
+                setSearchLogs(objs);
+                if (data.error) {
+                    console.error("Error fetching search results:", data.error);
+                }
+            })
+            .catch((error) => {
+                console.error("Error fetching search results:", error);
+            });
+    };
+
     return (
         <div style={{ padding: '0 100px' }}>
             <div style={{ border: '2px solid grey', padding: '10px', borderRadius: '10px' }}>
-                <Table striped bordered hover responsive >
+                <Table striped bordered hover responsive>
                     <thead>
                         <tr>
                             <th>ORDER NO</th>
@@ -164,7 +327,7 @@ const ManualSearch = () => {
                             <th>REQUEST TYPE</th>
                         </tr>
                     </thead>
-                    <tbody style={{fontSize:'14px',lineHeight:'1rem'}}>
+                    <tbody style={{ fontSize: '14px', lineHeight: '1rem' }}>
                         <tr>
                             <td>{aufnr_11.AUFNR}</td>
                             <td>{aufnr_11.BUKRS}</td>
@@ -245,12 +408,12 @@ const ManualSearch = () => {
                                 <th style={{ width: '5%' }}>CA NUMBER</th>
                                 <th style={{ width: '5%' }}>CSTS CD</th>
                                 <th style={{ whiteSpace: 'nowrap', maxWidth: '15%', width: '15%' }}>CONSUMER NAME</th>
-                                <th className="text-left" style={{ width: '40%', textAlign: 'left' }}>CONSUMER ADDRESS</th>
+                                <th style={{ width: '40%', textAlign: 'center' }}>CONSUMER ADDRESS</th>
                                 <th style={{ width: '10%' }}>POLE ID</th>
                                 <th style={{ width: '10%' }}>TARIFF CATEGORY</th>
                             </tr>
                         </thead>
-                        <tbody style={{fontSize:'14px',lineHeight:'1rem'}}>
+                        <tbody style={{ fontSize: '14px', lineHeight: '1rem' }}>
                             {searchResults.map((result, index) => {
                                 const isResultInExisting = existingResult.some(
                                     (existingRow) => existingRow === result.CONS_REF
@@ -301,6 +464,8 @@ const ManualSearch = () => {
                                         required
                                         type="text"
                                         placeholder="House/Plot/Block/Khasra"
+                                        value={addressPart1}
+                                        onChange={(e) => setAddressPart1(e.target.value)}
                                     />
                                 </Form.Group>
                                 <Form.Group as={Col} md="3" controlId="validationCustom01">
@@ -308,6 +473,8 @@ const ManualSearch = () => {
                                         required
                                         type="text"
                                         placeholder="Number(House/Plot/Block/Khasra)"
+                                        value={addressPart2}
+                                        onChange={(e) => setAddressPart2(e.target.value)}
                                     />
                                 </Form.Group>
                                 <Form.Group as={Col} md="3" controlId="validationCustom01">
@@ -315,28 +482,30 @@ const ManualSearch = () => {
                                         required
                                         type="text"
                                         placeholder="Area"
+                                        value={addressPart3}
+                                        onChange={(e) => setAddressPart3(e.target.value)}
                                     />
                                 </Form.Group>
                                 <Form.Group as={Col} md="3" controlId="validationCustom01">
-                                    <Button>Start Manual Search</Button>
+                                    <Button onClick={handleManualSearchClick}>Start Manual Search</Button>
                                 </Form.Group>
                             </Row>
                         </Form>
-                    </div>
+                    </div><hr />
                     <div className='refine-search-form'>
-                        <Form style={{ height: 'min-content' }}>
+                        <Form style={{ textAlign: 'center' }}>
                             <Row className='mb-3'>
                                 <Form.Group as={Col} md="3" controlId="validationCustom01">
                                     <Button variant='success'>Complete Dues Search</Button>
                                 </Form.Group>
                                 <Form.Group as={Col} md="3" controlId="validationCustom01">
-                                    <Button variant='warning'>Reset</Button>
+                                    <Button variant='warning' style={{ width: '100%' }}>Reset</Button>
                                 </Form.Group>
                                 <Form.Group as={Col} md="3" controlId="validationCustom01">
                                     <Button variant='info'>Back to Home</Button>
                                 </Form.Group>
                                 <Form.Group as={Col} md="3" controlId="validationCustom01" style={{ display: 'flex' }}>
-                                    <Form.Control type='text' style={{ width: '10rem' }} />
+                                    <Form.Control type='text' style={{ width: '10rem', height: 'baseline' }} />
                                     <Button variant="warning">Refine Search</Button>
                                     <Button>Original List</Button>
                                 </Form.Group>

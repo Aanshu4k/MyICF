@@ -1,10 +1,47 @@
-.mcd-container{
+.mcd-container {
     border: 2px solid lightgrey;
     padding: 15px;
     border-radius: 10px;
     margin: 0 8rem;
 }
-tbody{
+
+tbody {
     font-size: 14px;
     line-height: 1rem;
 }
+
+.auto:hover,
+.manual:hover {
+    color: rgb(0, 153, 255);
+}
+
+.auto,
+.manual {
+    margin-left: 16px;
+    cursor: pointer;
+    color: black;
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.mcd-cases-table-wrapper {
+    position: relative;
+    max-height: 400px; /* Set a max height or adjust as needed */
+    overflow-y: auto;
+  }
+  
+  .mcd-cases-table-body {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  
+  .mcd-cases-table-body table {
+    margin-bottom: 0; /* Remove margin to prevent double scrollbars */
+  }
+  .mcd-cases-table-body table thead th {
+    position: sticky;
+    top: 0;
+    background-color: #fff;
+    z-index: 1;
+  }
+  
