@@ -16,14 +16,13 @@ const ReportDetails = () => {
     const [sortConfig, setSortConfig] = useState({ key: null, direction: '' });
 
     useEffect(() => {
-        axios.get('http://localhost:5001/api/icf_reports')
+        axios.get('https://icf1.bsesbrpl.co.in/api/icf_reports')
             .then((res) => {
                 setReportData(res.data.data);
                 setReportDataCopy(res.data.data);
                 console.log("tfcf data entries : ", res.data.data);
             });
     }, []);
-
     function formatDate(utcDateString) {
         const date = new Date(utcDateString);
         const day = date.getUTCDate().toString().padStart(2, '0');
@@ -46,22 +45,22 @@ const ReportDetails = () => {
         }
     };
 
+    // const handleSearchByRequestNo = () => {
+    //     console.log("Aufnr search term : ", searchTerm);
+    //     if (!searchTerm) {
+    //         setReportData(reportDataCopy);
+    //         return;
+    //     }
+    //     const newFilteredRows = reportData.filter(row => row.requestNo && row.requestNo.includes(searchTerm.trim()));
+    //     setReportData(newFilteredRows);
+    // };
 
-    const handleSearchByRequestNo = () => {
-        console.log("Aufnr search term : ", searchTerm);
-        if (!searchTerm) {
-            setReportData(reportDataCopy);
-            return;
-        }
-        const newFilteredRows = reportDataCopy.filter(row => row.requestNo && row.requestNo.includes(searchTerm.trim()));
-        setReportData(newFilteredRows);
-    };
     const handleSearchByUserId = () => {
         if (!searchTerm) {
             setReportData(reportDataCopy);
             return;
         }
-        const newFilteredRows = reportDataCopy.filter(row => row.userId && row.userId.includes(searchTerm.trim()));
+        const newFilteredRows = reportData.filter(row => row.userId && row.userId.includes(searchTerm.trim()));
         setReportData(newFilteredRows);
     }
     //this will toggle the sorting direction Asc or Desc
@@ -99,15 +98,15 @@ const ReportDetails = () => {
     return (
         <div className="report-container">
             <div className="report-header">
-                <h4>ICF REPORT</h4>
+                <h4 style={{ filter: 'drop-shadow(0 0 10px grey)' }}>ICF REPORT</h4>
             </div>
             <div className="report-search">
-                <Form.Group controlId="formFile" className="mb-3" style={{ display: 'flex', alignItems: 'center' }}>
+                {/* <Form.Group controlId="formFile" className="mb-3" style={{ display: 'flex', alignItems: 'center' }}>
                     <Form.Control placeholder='Search by Request No.' type="text" onChange={(e) => setSearchTerm(e.target.value)} />
                     <Button type="submit" onClick={handleSearchByRequestNo}>
                         Search
                     </Button>
-                </Form.Group>{" "}
+                </Form.Group>{" "} */}
                 <Form.Group controlId="formFile" className="mb-3" style={{ display: 'flex', alignItems: 'center' }}>
                     <Form.Control placeholder='Search by User Id' type="text" onChange={(e) => setSearchTerm(e.target.value)} />
                     <Button type="submit" onClick={handleSearchByUserId}>
@@ -140,29 +139,47 @@ const ReportDetails = () => {
                                 Division
                                 <FontAwesomeIcon icon={getSortIcon('division')} />
                             </th>
-                            <th>MCD</th>
-                            <th>DUES</th>
+                            <th onClick={() => requestSort('address')} >
+                                ADDRESS
+                                <FontAwesomeIcon icon={getSortIcon('address')} />
+                            </th>
+                            <th>DUES (AUTO)</th>
+                            <th>MCD (AUTO)</th>
+                            <th>CASES MISSED (By Auto Search)</th>
                             <th onClick={() => requestSort('createdAt')}>
-                                Date
+                                CF Date
                                 <FontAwesomeIcon icon={getSortIcon('createdAt')} />
                             </th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedData().map((data, index) => (
-                            <tr key={data._id}>
-                                <td>{data.userId}</td>
-                                <td>{data.requestNo}</td>
-                                <td>{data.division}</td>
-                                <td>{data.type === '1' || data.type === '2' ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td>
-                                <td>{data.type === '' || data.type === '2' ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td>
-                                <td>{formatDate(data.createdAt)}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </Table>
-            </div>
-        </div>
+                            <th onClick={() => requestSort('efficiency')}>Efficiency
+                                <FontAwesomeIcon icon={getSortIcon('efficiency')} />
+                            </th>
+                        </tr >
+                    </thead >
+                    {reportData.length === 0 ? (
+                        <div className="no-results-found">No results found</div>
+                    ) : (
+                        <tbody>
+                            {sortedData().map((data, index) => (
+                                <tr key={data._id}>
+                                    <td>{data.userId}</td>
+                                    <td>{data.requestNo}</td>
+                                    <td>{data.division}</td>
+                                    <td>{data.address}</td>
+                                    <td>{data.duesData.length}</td>
+                                    <td>{data.mcdData.length} </td>
+                                    {/* <td>{data.type === '1' || data.type === '2' ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td>
+                                <td>{data.type === '' || data.type === '2' ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td> */}
+                                    <td>{data.autoSearchCases !== data.manualSearchCases ? data.manualSearchCases.length : 0}</td>
+                                    <td style={{ width: 'max-content', whiteSpace: 'nowrap' }}>{formatDate(data.createdAt)}</td>
+                                    <td>{((data.duesData.length/(data.duesData.length+data.manualSearchCases.length))*100).toFixed(2)} %</td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    )}
+
+                </Table >
+            </div >
+        </div >
     );
 };
 export default ReportDetails;

@@ -117,13 +117,13 @@ const ManualSearch = () => {
         }
     };
     let aufnr_11 = localStorage.getItem('manual');
-  if (aufnr_11) {
-    aufnr_11 = JSON.parse(aufnr_11);
-    if (aufnr_1.AUFNR !== aufnr_11.AUFNR) {
-      setAufnr_1(aufnr_11);
-      setCaseData(aufnr_11);
+    if (aufnr_11) {
+        aufnr_11 = JSON.parse(aufnr_11);
+        if (aufnr_1.AUFNR !== aufnr_11.AUFNR) {
+            setAufnr_1(aufnr_11);
+            setCaseData(aufnr_11);
+        }
     }
-  }
 
     function setDues() {
         let existingResult = localStorage.getItem("saveExistRes");
@@ -175,6 +175,51 @@ const ManualSearch = () => {
         }
         return word.toUpperCase();
     }
+    const handleFilterByBPType = (bpType) => {
+        if (!bpType) {
+            setSearchResults(searchResults1);
+            let obj = getCounts(searchResultsOther);
+            setCounts(obj)
+            console.log("final ...")
+            return
+        }
+        // Filter the data based on the selected BP_TYPE
+        let filteredData = [];
+        if (bpType === "other") {
+            let bps = ["Normal", "ENFORCEMENT", "LEGAL", "Sealing"];
+            filteredData = searchResults1.filter((item) => !bps.includes(item.BP_TYPE))
+        } else {
+            filteredData = searchResults1.filter((item) => item.BP_TYPE == bpType)
+        }
+
+        if (bpType === "move") {
+            console.log(searchResults1)
+            filteredData = searchResults1.filter((item) => item.BP_TYPE === 'Normal' && !item.MOVE_OUT.includes('9999'))
+        }
+        console.log(filteredData, bpType, "llll", searchResults1)
+        setSearchResults(filteredData);
+        let obj = getCounts(searchResultsOther);
+        setCounts(obj)
+    };
+    const [duesFilter, setDuesFilter] = useState("all"); // State to keep track of selected dues filter
+    // Function to handle the change in the dues filter radio buttons
+    const handleDuesFilterChange = (event) => {
+        const selectedFilter = event.target.value;
+        setDuesFilter(selectedFilter);
+        // Filter the data based on the selected radio button
+        const filteredData = searchResultsOther.filter((result) => {
+            if (selectedFilter === "all") {
+                return true; // Return all results if "All" is selected
+            } else if (selectedFilter === "zero") {
+                return result.solr_dues <= 500; // Filter results where DUES is 0
+            } else if (selectedFilter === "greater500") {
+                return result.solr_dues && result.solr_dues > 500; // Filter results where DUES is greater than 500
+            }
+        });
+        let data = getCounts(filteredData);
+        setCounts(data)
+        setSearchResults(filteredData);
+    };
 
     //insert logs in the mongo db collection logentries
     function setSearchLogs(payload) {
@@ -225,7 +270,6 @@ const ManualSearch = () => {
         }
         addressPart3 = addressPart3.replace(/[^\w\s-]/g, '');
         let drop = localStorage.getItem("dropDataList");
-
         if (drop && drop === 1) {
             setIsDrop(1);
         } else {
@@ -233,7 +277,7 @@ const ManualSearch = () => {
         }
         setExistingResult([]);
 
-        //API call to fetch cases from manually entered input by the User
+        //API call to fetch cases from manually entered address as input by the User
         fetch(`${url.API_url}/api/manual_search`, {
             method: "POST",
             headers: {
@@ -276,9 +320,9 @@ const ManualSearch = () => {
                 })
                 console.log(finalres, "finalres")
                 data.data.push(...finalres);
-                // let dues_filter = data.data.filter(x => x.solr_dues > 500)
-                setSearchResults(data.data);
-                let obj = getCounts(data.data);
+                let dues_filter = data.data.filter(x => x.solr_dues > 500)
+                setSearchResults(dues_filter);
+                let obj = getCounts(dues_filter);
                 await setSearchResults1(data.data)
                 await setSearchResultsOther(data.data);
                 setCounts(obj);
@@ -311,6 +355,51 @@ const ManualSearch = () => {
             .catch((error) => {
                 console.error("Error fetching search results:", error);
             });
+    };
+
+    //function to check dues and mcd search complete status from local storage
+    function checkBt() {
+        let dues = sessionStorage.getItem("duesSearchComplete");
+        let mcd = sessionStorage.getItem("mcdSearchComplete");
+        if (dues) {
+            setDuesSearchComplete_2(true);
+
+        } else {
+            setDuesSearchComplete_2(0);
+
+        }
+        if (dues && mcd) {
+            setDuesSearchComplete_1(true)
+        } else {
+            setDuesSearchComplete_1(null)
+        }
+    }
+
+    // Function to open the modal on reset button
+    const openModal = async () => {
+        let systemId = sessionStorage.getItem("systemId");
+        let obj = {
+            systemId,
+            type: "dues",
+            aufnr: aufnr_1.AUFNR,
+            duesData: [],
+            selectedDues: []
+        }
+        console.log("Payload for icf_data_status API : ", obj);
+        //api to insert or update a record in tfcfdataentries collection mongoDB 
+        await fetch(`https://icf1.bsesbrpl.co.in/api/icf_data_status`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(obj),
+        })
+        fetchIpAddress();
+        sessionStorage.removeItem("duesSearchComplete");
+        checkBt();
+        setselectedRows_1([]);
+        setSearchResults(searchResultsOther)
+        localStorage.setItem("sealingData", JSON.stringify([]))
     };
 
     return (
@@ -349,7 +438,9 @@ const ManualSearch = () => {
                                         name="duesFilter"
                                         id="all"
                                         value="all"
+                                        checked={duesFilter === "all"}
                                         label={<span style={{ fontWeight: 600, fontSize: '18px' }}>All</span>}
+                                        onChange={handleDuesFilterChange}
                                     />
                                 </div>
                                 <div className="form-check-box">
@@ -359,35 +450,38 @@ const ManualSearch = () => {
                                         name="duesFilter"
                                         id="greater500"
                                         value="greater500"
-                                        checked
+                                        checked={duesFilter === "greater500"}
                                         label={<span style={{ fontWeight: 600, fontSize: '18px' }}>Dues &gt; 500</span>}
+                                        onChange={handleDuesFilterChange}
                                     />
                                 </div>
                             </Col>
                         </Row>
                         <h5 style={{ color: 'darkslategray', cursor: 'pointer' }}>
                             <span className="span5" style={{ color: 'black', fontWeight: 700 }}>
-                                <span className="span1" style={{ float: 'left', cursor: 'pointer', color: 'black', fontWeight: 700, textDecoration: 'underline' }}>
-                                    <span>Selected Result: </span> 0
+                                <span className="result-count" style={{ float: 'left', cursor: 'pointer', color: 'black', fontWeight: 700, textDecoration: 'underline' }}>
+                                    <span>Selected Result: </span> {selectedRows_1.length}
                                 </span>
-                                <span>Total:</span>
-                                <span style={{ marginLeft: '8px' }}>0</span>,
-                                <span className="span4" style={{ marginLeft: '16px', cursor: 'pointer', color: 'black', fontWeight: 600 }}>
-                                    <span>Regular:</span> 0
+                                <span className="bptype">Total: {counts.total || 0}</span>,
+                                <span className="bptype" onClick={() => handleFilterByBPType('Normal')}>
+                                    Regular: {counts.normal || 0}
                                 </span>
-                                <span className="span3" style={{ marginLeft: '16px', cursor: 'pointer', color: 'black', fontWeight: 700 }}>
-                                    <span>Enforcement:</span> 0
+                                <span className="bptype" onClick={() => handleFilterByBPType('ENFORCEMENT')}>
+                                    <span>Enforcement:</span>{(counts.enforcement || 0)}
                                 </span>
-                                <span className="span2" style={{ marginLeft: '16px', cursor: 'pointer', color: 'black', fontWeight: 700 }}>
-                                    <span>Legal:</span> 0
+                                <span className="bptype" onClick={() => handleFilterByBPType('LEGAL')}>
+                                    <span>Legal:</span> {(counts.legal || 0)}
                                 </span>
-                                <span className="span1" style={{ marginLeft: '16px', cursor: 'pointer', color: 'black', fontWeight: 700 }}>
-                                    <span>Other:</span> 0
+                                <span className="bptype" onClick={() => handleFilterByBPType('other')} >
+                                    <span>Other:</span> {(counts.other || 0)}
                                 </span>
-                                <span className="span1" style={{ marginLeft: '16px', cursor: 'pointer', color: 'black', fontWeight: 700 }}>
-                                    <span>Move Out Cases:</span> 0
+                                <span className="bptype" onClick={() => handleFilterByBPType('move')}>
+                                    <span>Move Out Cases:</span> {(counts.move || 0)}
                                 </span>
-                                <span style={{ marginRight: '60px', color: 'green', float: 'right' }}> </span>
+                                <span style={{ marginRight: '60px', color: 'green', float: 'right' }}>
+                                    {!isDuesSearchComplete_1 ? "" : "Sent To DSK"}
+                                    {isDuesSearchComplete_1 && (<i className="fa fa-check" style={{ color: 'green', fontSize: '20px' }} />)}
+                                </span>
                             </span>
                         </h5>
                     </div>
@@ -499,7 +593,7 @@ const ManualSearch = () => {
                                     <Button variant='success'>Complete Dues Search</Button>
                                 </Form.Group>
                                 <Form.Group as={Col} md="3" controlId="validationCustom01">
-                                    <Button variant='warning' style={{ width: '100%' }}>Reset</Button>
+                                    <Button variant='warning' onClick={(e) => openModal()} style={{ width: '100%' }}>Reset</Button>
                                 </Form.Group>
                                 <Form.Group as={Col} md="3" controlId="validationCustom01">
                                     <Button variant='info'>Back to Home</Button>

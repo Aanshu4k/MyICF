@@ -1,26 +1,44 @@
-.filter-section{
+.filter-section {
     text-align: center;
 }
-.form-check-box{
+
+.form-check-box {
     display: inline-block;
     margin-right: 1rem;
 }
-.manual-search-form{
+
+.manual-search-form {
     display: flex;
     justify-content: center;
 }
-.refine-search-form{
+
+.refine-search-form {
     display: flex;
     justify-content: center;
     flex-wrap: wrap;
 }
-.fixed-header{
+
+.fixed-header {
     font-size: 2rem;
 }
-tbody{
+
+tbody {
     font-size: 14px;
     line-height: 1rem;
 }
-.button{
+
+.button {
     width: 100%;
+}
+
+.bptype {
+    margin-left: 16px;
+    cursor: pointer;
+    color: black;
+    font-weight: 700;
+}
+
+.bptype:hover {
+    color: rgb(3, 154, 255);
+    text-decoration: underline;
 }
