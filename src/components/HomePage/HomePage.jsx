@@ -107,7 +107,7 @@ const HomePage = () => {
                     headers: {
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify({ division: value }),
+                    body: JSON.stringify({ division: selectedDivision }),
                 })
                     .then((response) => response.json())
                     .then((data) => {
@@ -620,7 +620,7 @@ const HomePage = () => {
 
             let sealing_str = []
             uniqueArray1.forEach(x => {
-                console.log("Unique Array 1 : ",x)
+                console.log("Unique Array 1 : ", x)
                 const prefix = x.match(/^([a-zA-Z]+)(.*)/);
                 if (prefix && prefix.length) {
                     let arr = getWordArr(prefix[1], prefix[2]);
@@ -746,7 +746,6 @@ const HomePage = () => {
                     } else {
                         finalSplitWords.push(x)
                         console.log("No match found");
-
                     }
                 }
                 return null;
@@ -820,16 +819,12 @@ const HomePage = () => {
         // Use Promise.all to wait for all promises to resolve
         await Promise.all(requestPromises);
         localStorage.removeItem('existingResult');
-
-        localStorage.setItem('saveExistRes', JSON.stringify(saveExistRes));
+        localStorage.setItem('saveExistRes', JSON.stringify(saveExistRes)); //save the nearby fetched cases in local storage
         navigate('/output');
-
     };
 
     return (
-        <div
-            style={{ marginTop: "4rem", padding: "0 5rem", justifyContent: "center" }}
-        >
+        <div style={{ marginTop: "4rem", padding: "0 5rem", justifyContent: "center" }}>
             <Toaster position="top-center" reverseOrder={false} />
             <div className="top-section">
                 <div style={{ textAlign: "center" }}>

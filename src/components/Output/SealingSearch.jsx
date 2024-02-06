@@ -2,11 +2,12 @@ import Table from "react-bootstrap/Table";
 import Form from "react-bootstrap/Form";
 import './SealingSearch.css';
 import Button from "react-bootstrap/Button";
-import Tab from "react-bootstrap/Tab";
-import Tabs from "react-bootstrap/Tabs";
 import { useState, useEffect } from 'react';
 import { useParams } from "react-router-dom";
-let url=require('../config.json')
+import axios from 'axios';
+let url = require('../config.json')
+
+
 const SealingSearch = () => {
   const [aufnr_1, setAufnr_1] = useState({});
   const { aufnr } = useParams();
@@ -23,6 +24,10 @@ const SealingSearch = () => {
   const [auto_count, set_auto_count] = useState(0);
   const [manual_count, set_manual_count] = useState(0);
   const [counts, setCounts] = useState({});
+  const [selectedDivision, setSelectedDivision] = useState([]);
+  let [addressPart1, setAddressPart1] = useState("");
+  let [addressPart2, setAddressPart2] = useState("");
+  let [addressPart3, setAddressPart3] = useState("");
 
   let aufnr_11 = localStorage.getItem('manual');
   if (aufnr_11) {
@@ -86,20 +91,11 @@ const SealingSearch = () => {
     }
   };
   const fetchDivisions = () => {
-    fetch(`${url.API_url}/api/divisions_on_page_load1`)
-      .then((response) => response.json())
-      .then((data) => {
-        let arr = []
-        if (data.data) {
-          data.data.forEach(x => {
-            arr.push({
-              value: x.VAPLZ,
-              label: x.VAPLZ
-            })
-          })
-        }
-        console.log("Divisions : ",arr)
-        setDivisions(arr);
+    axios
+      .get(`${url.API_url}/api/divisions_on_page_load1`)
+      .then((response) => {
+        setDivisions(response.data.data);
+        console.log("divisions for Sealing Search : ", response.data.data);
       })
       .catch((error) => {
         console.error("Error fetching divisions:", error);
@@ -109,6 +105,7 @@ const SealingSearch = () => {
     fetchIpAddress();
     fetchDivisions();
   }, []);
+
   const handleRowClick = (row, e) => {
     console.log(e.target.checked, "e.target.checked");
     if (e.target.checked) {
@@ -175,6 +172,7 @@ const SealingSearch = () => {
     }
   }
   const handleRowClick_1 = (e) => {
+    //for check and uncheck of all rows on one click
     if (e.target.checked) {
       selectedRows_1 = searchResults;
       // Check all checkboxes
@@ -189,7 +187,6 @@ const SealingSearch = () => {
       const checkboxArray = Array.from(checkboxes); // Convert HTMLCollection to array
       checkboxArray.forEach((checkbox) => (checkbox.checked = false));
       setselectedRows_1([])
-
     }
   };
   const handleFilterByBPType = (bpType) => {
@@ -212,6 +209,155 @@ const SealingSearch = () => {
     let obj = getCounts(searchResultsOther);
     setCounts(obj);
   };
+  function removeSpecialCharsAndCapitalize(inputString) {
+    // Remove special characters and spaces, but keep numeric characters
+    const cleanedString = inputString.replace(/[^a-zA-Z0-9]/g, '');
+
+    // Capitalize the cleaned string
+    const capitalizedString = cleanedString.toUpperCase();
+    return capitalizedString;
+  }
+  function capitalizeWord(word) {
+    if (typeof word !== 'string' || word.length === 0) {
+      return word;
+    }
+
+    return word.toUpperCase();
+  }
+  function setSearchLogs(payload) {
+    const requestPromise = fetch(`${url.api_url}/api/create_log`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
+      .then((response) => response.json())
+      .then(async (data) => {
+      })
+  }
+  const [ipAddress, setIpAddress] = useState(null);
+  const handleManualSearch = () => {
+    if (!addressPart1 && !addressPart2 && !addressPart3)
+      return;
+
+    const startTime = new Date();
+
+    // Process address parts and remove special characters
+    let modifiedAddressPart1 = addressPart1 ? removeSpecialCharsAndCapitalize(addressPart1) : '';
+    let modifiedAddressPart2 = addressPart2 ? removeSpecialCharsAndCapitalize(addressPart2) : '';
+    let modifiedAddressPart3 = addressPart3 ? removeSpecialCharsAndCapitalize(addressPart3.trim()) : '';
+
+    // Array of suffixes to append to address
+    let str_arr = ["1ST", "I", "2ND", "II", "3RD", "III"];
+    let str_arr1 = ["BLOCK", "BLK", "PLOT", "PLT"];
+
+    // Remove special characters from address parts
+    modifiedAddressPart1 = modifiedAddressPart1.replace(/[^\w\s]/g, '');
+    modifiedAddressPart2 = modifiedAddressPart2.replace(/[^\w\s]/g, '');
+    modifiedAddressPart3 = modifiedAddressPart3.replace(/[^\w\s-]/g, '');
+
+    // Combine address parts into a complete address
+    let complete_addr = capitalizeWord(modifiedAddressPart1) + '' + capitalizeWord(modifiedAddressPart2);
+    let words_arr = [complete_addr];
+
+    // Generate variations of the address by appending suffixes
+    for (let index = 0; index < str_arr.length; index++) {
+      const element = str_arr[index];
+      let words = capitalizeWord(modifiedAddressPart1) + element + capitalizeWord(modifiedAddressPart2);
+      words_arr.push(words);
+    }
+
+    // Generate variations of the address by appending suffixes and prefixes
+    for (let index = 0; index < str_arr1.length; index++) {
+      const element = str_arr1[index];
+      let words = capitalizeWord(modifiedAddressPart1) + element;
+      let words1 = element + capitalizeWord(modifiedAddressPart2);
+      words_arr.push(words);
+      words_arr.push(words1);
+    }
+    let filterDivision = selectedDivision.map(x => x.value)
+    // Clear existing result variable
+    setExistingResult([]);
+
+    // Fetch data from API
+    fetch(`${url.API_url}/api/manual_search_sealing`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        addressPart1: words_arr,
+        addressPart2: [capitalizeWord(modifiedAddressPart2)],
+        addressPart3: capitalizeWord(modifiedAddressPart3),
+        VAPLZ: caseData.VAPLZ,
+        divisions: filterDivision
+      }),
+    })
+      .then((response) => response.json())
+      .then((data) => {
+        console.log("Manual search sealing data : ", data);
+        let finalres = [];
+        data.data = data.results_count;
+        set_manual_count(data.results_count.length);
+        //need to be clear
+        let all_count = data.data.length;
+        if (data.data) {
+          //retrieves the auto searched mcd data from local storage
+          let existingResult1 = localStorage.getItem("sealing_data_1");
+          if (existingResult1) {
+            existingResult1 = JSON.parse(existingResult1);
+            if (existingResult1) {
+              finalres = existingResult1;
+            }
+          }
+        };
+        //reset the search result to store manual data
+        setSearchResults([]);
+        setSearchResults1([]);
+        setSearchResultsOther([]);
+
+        finalres.map(x => {
+          x.SEARCH_MODE = "AUTO-MODE";
+          return null;
+        })
+        console.log("Final res (auto sealing data) : ", finalres);
+        data.data.push(...finalres);
+        setSearchResults(data.data);
+        let obj = getCounts(data.data);
+        setSearchResults1(data.data);
+        setSearchResultsOther(data.data);
+        setCounts(obj);
+
+        const endTime = new Date();
+        // Calculate the time elapsed in minutes
+        const timeElapsedInMilliseconds = endTime - startTime;
+        const minutes = Math.floor(timeElapsedInMilliseconds / 60000);
+        const seconds = Math.floor((timeElapsedInMilliseconds % 60000) / 1000);
+        const milliseconds = (timeElapsedInMilliseconds % 1000).toString().padStart(3, '0').slice(0, 2); // Truncate to two digits
+        const formattedTime = `${minutes.toString().padStart(2, '0')} minutes, ${seconds.toString().padStart(2, '0')} seconds, ${milliseconds} milliseconds`;
+
+        let objs = {
+          "obj": {
+            "LogTextMain": words_arr.join(',') + ',' + [addressPart2].join(","),
+            "logTextAndSrc": [addressPart3].join(','),
+            "MethodName": "MANUAL-MODE",
+            "SolrSearchTime": formattedTime,
+            result_count: '' + all_count,
+            IP_address: ipAddress,
+            "REQUEST": caseData.REQUEST_NO
+          }
+        }
+        setSearchLogs(objs);
+        if (data.error) {
+          console.error("Error fetching manual search results : ", data.error);
+        }
+      })
+      .catch((error) => {
+        console.error("Error fetching search results:", error);
+      });
+  };
+
   return (
     <div className="mcd-container">
       <Table striped bordered hover responsive>
@@ -316,13 +462,13 @@ const SealingSearch = () => {
             <div className="col-md-6">
               <Form.Group controlId="division">
                 <Form.Select
-                  value={divisions}
-                  onChange={(e) => setDivisions(e.target.value)}
+                  value={selectedDivision}
+                  onChange={(e) => setSelectedDivision(e.target.value)}
                 >
                   <option value="">Select a division</option>
                   {divisions.map((division) => (
-                    <option key={division.value} value={division.value}>
-                      {division.value}
+                    <option key={division.VAPLZ} value={division.VAPLZ}>
+                      {division.VAPLZ}
                     </option>
                   ))}
                 </Form.Select>
@@ -330,25 +476,25 @@ const SealingSearch = () => {
             </div>
             <div className="col-md-6">
               <Form.Group controlId="khasra">
-                <Form.Control type="text" placeholder="House / Plot / Block / Khasra" />
+                <Form.Control type="text" placeholder="House / Plot / Block / Khasra" value={addressPart1} onChange={(e) => setAddressPart1(e.target.value)} />
               </Form.Group>
             </div>
           </div>
           <div className="row">
             <div className="col-md-6">
               <Form.Group controlId="number">
-                <Form.Control type="text" placeholder="Number (House / Plot / Block)" />
+                <Form.Control type="text" placeholder="Number (House / Plot / Block)" value={addressPart2} onChange={(e) => setAddressPart2(e.target.value)} />
               </Form.Group>
             </div>
             <div className="col-md-6">
               <Form.Group controlId="area">
-                <Form.Control type="text" placeholder="Area" />
+                <Form.Control type="text" placeholder="Area" value={addressPart3} onChange={(e) => setAddressPart3(e.target.value)} />
               </Form.Group>
             </div>
           </div>
           <div className="row">
             <div className="col-md-12" style={{ textAlign: 'center', margin: '10px' }}>
-              <Button variant="danger" className="mr-2">
+              <Button variant="danger" className="mr-2" onClick={handleManualSearch}>
                 Start MCD Search
               </Button>
             </div>

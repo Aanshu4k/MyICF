@@ -14,6 +14,7 @@ const ReportDetails = () => {
     const [toDate, setToDate] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: null, direction: '' });
+    const [userid_count, setuserid_count] = useState();
 
     useEffect(() => {
         axios.get('https://icf1.bsesbrpl.co.in/api/icf_reports')
@@ -21,6 +22,7 @@ const ReportDetails = () => {
                 setReportData(res.data.data);
                 setReportDataCopy(res.data.data);
                 console.log("tfcf data entries : ", res.data.data);
+                console.log("Cases Missed By Auto Search : ", res.data.data.manualSearchCases)
             });
     }, []);
     function formatDate(utcDateString) {
@@ -62,6 +64,7 @@ const ReportDetails = () => {
         }
         const newFilteredRows = reportData.filter(row => row.userId && row.userId.includes(searchTerm.trim()));
         setReportData(newFilteredRows);
+        setuserid_count(newFilteredRows.length);
     }
     //this will toggle the sorting direction Asc or Desc
     const requestSort = (key) => {
@@ -101,12 +104,6 @@ const ReportDetails = () => {
                 <h4 style={{ filter: 'drop-shadow(0 0 10px grey)' }}>ICF REPORT</h4>
             </div>
             <div className="report-search">
-                {/* <Form.Group controlId="formFile" className="mb-3" style={{ display: 'flex', alignItems: 'center' }}>
-                    <Form.Control placeholder='Search by Request No.' type="text" onChange={(e) => setSearchTerm(e.target.value)} />
-                    <Button type="submit" onClick={handleSearchByRequestNo}>
-                        Search
-                    </Button>
-                </Form.Group>{" "} */}
                 <Form.Group controlId="formFile" className="mb-3" style={{ display: 'flex', alignItems: 'center' }}>
                     <Form.Control placeholder='Search by User Id' type="text" onChange={(e) => setSearchTerm(e.target.value)} />
                     <Button type="submit" onClick={handleSearchByUserId}>
@@ -130,6 +127,7 @@ const ReportDetails = () => {
                             <th onClick={() => requestSort('userId')}>
                                 User ID
                                 <FontAwesomeIcon icon={getSortIcon('userId')} />
+                                {userid_count || 0}
                             </th>
                             <th onClick={() => requestSort('requestNo')}>
                                 Request No
@@ -171,12 +169,15 @@ const ReportDetails = () => {
                                 <td>{data.type === '' || data.type === '2' ? <span className='span-check'>&#10003;</span> : <span className='span-cross'>&#10540;</span>}</td> */}
                                     <td>{data.autoSearchCases !== data.manualSearchCases ? data.manualSearchCases.length : 0}</td>
                                     <td style={{ width: 'max-content', whiteSpace: 'nowrap' }}>{formatDate(data.createdAt)}</td>
-                                    <td>{((data.duesData.length/(data.duesData.length+data.manualSearchCases.length))*100).toFixed(2)} %</td>
+                                    <td>
+                                        {/* {((data.autoRecordsFound.length/(data.autoSearchCases.length+data.manualSearchCases.length))*100).toFixed(2)}  */}
+                                        {(data.efficiency.percentage || 0).toFixed(2)}
+                                        %
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
                     )}
-
                 </Table >
             </div >
         </div >
