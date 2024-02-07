@@ -5,8 +5,9 @@ import Button from "react-bootstrap/Button";
 import { useState, useEffect } from 'react';
 import { useParams } from "react-router-dom";
 import axios from 'axios';
+// import Select from "react-dropdown-select";
+import Select from "react-select";
 let url = require('../config.json')
-
 
 const SealingSearch = () => {
   const [aufnr_1, setAufnr_1] = useState({});
@@ -94,8 +95,18 @@ const SealingSearch = () => {
     axios
       .get(`${url.API_url}/api/divisions_on_page_load1`)
       .then((response) => {
-        setDivisions(response.data.data);
         console.log("divisions for Sealing Search : ", response.data.data);
+        let arr = [];
+        if (response.data.data) {
+          response.data.data.forEach(x => {
+            arr.push({
+              value: x.VAPLZ,
+              label: x.VAPLZ
+            })
+          })
+        }
+        console.log("Divisions arr : ", arr);
+        setDivisions(arr);
       })
       .catch((error) => {
         console.error("Error fetching divisions:", error);
@@ -357,6 +368,11 @@ const SealingSearch = () => {
         console.error("Error fetching search results:", error);
       });
   };
+  const handleSelectedDivision = (selectedOption) => {
+
+    setSelectedDivision(selectedOption);
+    console.log("Selected Division for MCD search : ", selectedDivision)
+  }
 
   return (
     <div className="mcd-container">
@@ -461,17 +477,15 @@ const SealingSearch = () => {
           <div className="row" style={{ padding: '10px' }}>
             <div className="col-md-6">
               <Form.Group controlId="division">
-                <Form.Select
+                <Select
+                  options={divisions}
+                  onChange={handleSelectedDivision}
                   value={selectedDivision}
-                  onChange={(e) => setSelectedDivision(e.target.value)}
-                >
-                  <option value="">Select a division</option>
-                  {divisions.map((division) => (
-                    <option key={division.VAPLZ} value={division.VAPLZ}>
-                      {division.VAPLZ}
-                    </option>
-                  ))}
-                </Form.Select>
+                  isMulti
+                  placeholder="Choose Divisions"
+                  dropdownPosition={searchResults.length ? "top" : "bottom"}
+                  optionStyle={{ fontSize: '16px', fontWeight: "600", width: '330px', color: "black", alignItems: "left", textAlign: "left" }}
+                />
               </Form.Group>
             </div>
             <div className="col-md-6">
@@ -528,7 +542,6 @@ const SealingSearch = () => {
                 <i className="fa fa-check"></i> Complete MCD Search
               </Button>
             </div>
-
           </Form>
         </div>
       </div>

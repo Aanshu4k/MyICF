@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 import axios from 'axios';
@@ -6,16 +6,18 @@ import Table from 'react-bootstrap/Table';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSort, faSortUp, faSortDown } from '@fortawesome/free-solid-svg-icons';
 import './ReportDetails.css';
+import * as moment from 'moment';
 
 const ReportDetails = () => {
     const [reportData, setReportData] = useState([]);
     const [reportDataCopy, setReportDataCopy] = useState([]);
-    const [fromDate, setFromDate] = useState('');
-    const [toDate, setToDate] = useState('');
+    let [fromDate, setFromDate] = useState('');
+    let [toDate, setToDate] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: null, direction: '' });
     const [userid_count, setuserid_count] = useState();
-
+    const [requestCount, setRequestCount] = useState();
+    const [divisionCount, setDivisionCount] = useState();
     useEffect(() => {
         axios.get('https://icf1.bsesbrpl.co.in/api/icf_reports')
             .then((res) => {
@@ -24,7 +26,15 @@ const ReportDetails = () => {
                 console.log("tfcf data entries : ", res.data.data);
                 console.log("Cases Missed By Auto Search : ", res.data.data.manualSearchCases)
             });
-    }, []);
+    }, [fromDate,toDate]);
+    useEffect(()=>{
+        const uniqueUserIds = new Set(reportData.map(data => data.userId));
+        setuserid_count(uniqueUserIds.size);
+
+        // Calculate unique divisions count
+        const uniqueDivisions = new Set(reportData.map(data => data.division));
+        setDivisionCount(uniqueDivisions.size);
+    },[reportData])
     function formatDate(utcDateString) {
         const date = new Date(utcDateString);
         const day = date.getUTCDate().toString().padStart(2, '0');
@@ -32,39 +42,28 @@ const ReportDetails = () => {
         const year = date.getUTCFullYear();
         return `${day}-${month}-${year}`;
     }
-
     const handleReportSearch = () => {
-        const filtered = reportDataCopy.filter((prevData) =>
-            prevData.createdAt >= fromDate && prevData.createdAt <= toDate
-        );
-        if (fromDate === toDate || fromDate) {
-            const sameDateData = reportDataCopy.filter(
-                (prevData) => formatDate(prevData.createdAt) === formatDate(fromDate)
-            );
-            setReportData(sameDateData);
-        } else {
-            setReportData(filtered);
-        }
+        const filtered = reportData.filter((prevData) => {
+            // convert the createdAt property to a moment object
+            const createdDate = moment(prevData.createdAt);
+            // check if the createdDate is between the fromDate and toDate
+            return createdDate.isBetween(fromDate, toDate, "day", "[]");
+        });
+        setReportData(filtered);
     };
-
-    // const handleSearchByRequestNo = () => {
-    //     console.log("Aufnr search term : ", searchTerm);
-    //     if (!searchTerm) {
-    //         setReportData(reportDataCopy);
-    //         return;
-    //     }
-    //     const newFilteredRows = reportData.filter(row => row.requestNo && row.requestNo.includes(searchTerm.trim()));
-    //     setReportData(newFilteredRows);
-    // };
 
     const handleSearchByUserId = () => {
         if (!searchTerm) {
             setReportData(reportDataCopy);
             return;
         }
-        const newFilteredRows = reportData.filter(row => row.userId && row.userId.includes(searchTerm.trim()));
+        const newFilteredRows = reportData.filter(row => row.userId && row.userId.toLowerCase().includes(searchTerm.trim().toLowerCase()));
         setReportData(newFilteredRows);
-        setuserid_count(newFilteredRows.length);
+        console.log("newFilteredRows : ", newFilteredRows);
+        var userIds = newFilteredRows.map(({ userId }) => userId);
+        console.log("User Ids : ", userIds);
+        var uniqueUserId = new Set(userIds);
+        setuserid_count(uniqueUserId.size);
     }
     //this will toggle the sorting direction Asc or Desc
     const requestSort = (key) => {
@@ -124,18 +123,20 @@ const ReportDetails = () => {
                 <Table striped bordered hover responsive>
                     <thead>
                         <tr>
-                            <th onClick={() => requestSort('userId')}>
+                            <th onClick={() => requestSort('userId')} >
                                 User ID
-                                <FontAwesomeIcon icon={getSortIcon('userId')} />
-                                {userid_count || 0}
+                                <FontAwesomeIcon icon={getSortIcon('userId')} /><br />
+                                ( {userid_count} )
                             </th>
                             <th onClick={() => requestSort('requestNo')}>
-                                Request No
-                                <FontAwesomeIcon icon={getSortIcon('requestNo')} />
+                                REQUEST NO
+                                <FontAwesomeIcon icon={getSortIcon('requestNo')} /><br />
+                                ( {reportData.length} )
                             </th>
                             <th onClick={() => requestSort('division')}>
-                                Division
-                                <FontAwesomeIcon icon={getSortIcon('division')} />
+                                DIVISION
+                                <FontAwesomeIcon icon={getSortIcon('division')} /><br />
+                                {divisionCount}
                             </th>
                             <th onClick={() => requestSort('address')} >
                                 ADDRESS
@@ -143,12 +144,12 @@ const ReportDetails = () => {
                             </th>
                             <th>DUES (AUTO)</th>
                             <th>MCD (AUTO)</th>
-                            <th>CASES MISSED (By Auto Search)</th>
+                            <th>MISSED DUES {" "}AUTO SEARCH</th>
                             <th onClick={() => requestSort('createdAt')}>
                                 CF Date
                                 <FontAwesomeIcon icon={getSortIcon('createdAt')} />
                             </th>
-                            <th onClick={() => requestSort('efficiency')}>Efficiency
+                            <th onClick={() => requestSort('efficiency')}>EFFICIENCY
                                 <FontAwesomeIcon icon={getSortIcon('efficiency')} />
                             </th>
                         </tr >
