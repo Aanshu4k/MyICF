@@ -5,10 +5,15 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import './HomePage.css';
 import Table from "react-bootstrap/Table";
+import Form from 'react-bootstrap/Form';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
+import Container from 'react-bootstrap/Container';
 const url = require("../config.json");
 
 const HomePage = () => {
     const [cases, setCases] = useState([]);
+    const [casesOther, setCasesOther] = useState([]);
     const [icfData, setIcfData] = useState([]);
     const [divisions, setDivisions] = useState([]);
     const [selectedDivision, setSelectedDivision] = useState("");
@@ -23,6 +28,7 @@ const HomePage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [ipAddress, setIpAddress] = useState(null);
+    const [aufnrSearch, setAufnrSearch] = useState('');
     const navigate = useNavigate();
 
     const fetchDivisions = () => {
@@ -30,6 +36,7 @@ const HomePage = () => {
             .get(`${url.API_url}/api/divisions_on_page_load1`)
             .then((response) => {
                 setDivisions(response.data.data);
+                console.log("Divisions fetched : ", response.data.data)
             })
             .catch((error) => {
                 console.error("Error fetching divisions:", error);
@@ -96,6 +103,7 @@ const HomePage = () => {
                     }
                 }
                 setCases(rowsWithId);
+                setCasesOther(rowsWithId);
                 setCaseCount(rowsWithId.length); // Update the case count
                 console.log("Fetched cases data:", rowsWithId);
                 let filter = divisions.filter((x) => x.VAPLZ === value);
@@ -147,8 +155,23 @@ const HomePage = () => {
     };
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentItems = cases.slice(indexOfFirstItem, indexOfLastItem);
+    let currentItems = cases.slice(indexOfFirstItem, indexOfLastItem);
     const totalPages = Math.ceil(caseCount / itemsPerPage);
+
+    // Function to handle changes in the AUFNR search input
+    const handleAufnrSearch = (e) => {
+        setAufnrSearch(e.target.value);
+    };
+
+    //function search cases by order no / aufnr 
+    const handleSearchByAufnr = () => {
+        if (!aufnrSearch) {
+            setCases(casesOther);
+            return;
+        }
+        const newFilteredRows = casesOther.filter(row => row.AUFNR.includes(aufnrSearch.trim()));
+        setCases(newFilteredRows);
+    }
 
     const handleRowClick = (row) => {
         setSelectAllChecked(false);
@@ -264,9 +287,6 @@ const HomePage = () => {
                     typeof element === "string" && element.toUpperCase() === wordToMatch
             );
         });
-        // let filteredData1 = data.filter(subarray => {
-        //     return subarray.some(element => typeof element === "string" && ((wordToMatch.includes(element.toUpperCase()))));
-        // });
         if (!filteredData.length) {
             return [];
         } else {
@@ -822,42 +842,63 @@ const HomePage = () => {
         localStorage.setItem('saveExistRes', JSON.stringify(saveExistRes)); //save the nearby fetched cases in local storage
         navigate('/output');
     };
-
+    const handleDivsionChange = (e) => {
+        setSelectedDivision(e.target.value);
+        console.log("Selected Division : ", e.target.value);
+    }
     return (
         <div style={{ marginTop: "4rem", padding: "0 5rem", justifyContent: "center" }}>
             <Toaster position="top-center" reverseOrder={false} />
+
             <div className="top-section">
                 <div style={{ textAlign: "center" }}>
                     <h4>Request Pending For CF</h4>
                 </div>
-                <div className="division-section">
-                    <select
-                        value={selectedDivision}
-                        onChange={(e) => setSelectedDivision(e.target.value)}
-                        style={{ fontSize: "20px", alignItems: "center", width: "40rem" }}
-                    >
-                        <option value="">Select a division</option>
-                        {divisions.map((division) => (
-                            <option key={division.VAPLZ} value={division.VAPLZ}>
-                                {division.VAPLZ} - {division.DIVISION_NAME}
-                            </option>
-                        ))}
-                    </select>{" "}
-                    <div className="button-container">
-                        {" "}
-                        <Button variant="danger" onClick={handleFetchCases}>
-                            Fetch Cases
-                        </Button>{" "}
-                        <Button onClick={handleSearchMatchingAddresses}>
-                            Dues Process
-                        </Button>{" "}
-                        <Button onClick={handleReset}>Reset</Button>
-                    </div>
-                </div>
+                <Container>
+                    <Row className="justify-content-md-center">
+                        <Col xs={12} md={6}>
+                            <select
+                                value={selectedDivision}
+                                onChange={handleDivsionChange}
+                                style={{ fontSize: "20px", alignItems: "center", width: "100%" }}
+                            >
+                                <option value="">Select a division</option>
+                                {divisions.map((division) => (
+                                    <option key={division.VAPLZ} value={division.VAPLZ}>
+                                        {division.VAPLZ} - {division.DIVISION_NAME}
+                                    </option>
+                                ))}
+                            </select>
+                        </Col>
+                        <Col xs={6} md={2}>
+                            <Button variant="danger" onClick={handleFetchCases} style={{ width: '10rem' }}>
+                                Fetch Cases
+                            </Button>
+                        </Col>
+                        <Col xs={6} md={2}>
+                            <Button onClick={handleSearchMatchingAddresses} style={{ width: '10rem' }}>
+                                Dues Process
+                            </Button>
+                        </Col>
+                        <Col xs={6} md={2}>
+                            <Button variant="warning" onClick={handleReset} style={{ width: '10rem' }}>Reset</Button>
+                        </Col>
+                    </Row>
+
+                </Container>
             </div>
-            <div className="top-pagination">
-                <b>Number of Cases Fetched: {caseCount}</b>
-            </div>
+            <Container>
+                <Row>
+                    <Col sm={4}>
+                        <b>Number of Cases Fetched: {caseCount}</b>
+                    </Col>
+                    <Col sm={8}>
+                        <input className="order-filter" type="text" placeholder="Search by Order No"
+                            onChange={handleAufnrSearch} value={aufnrSearch} />
+                        <Button variant="info" onClick={handleSearchByAufnr}> SEARCH</Button>
+                    </Col>
+                </Row>
+            </Container>
             {showTable && (
                 <div className="fetched-cases-table">
                     <Table striped bordered hover style={{ height: "auto" }}>

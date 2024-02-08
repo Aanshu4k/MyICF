@@ -5,7 +5,6 @@ import Button from "react-bootstrap/Button";
 import { useState, useEffect } from 'react';
 import { useParams } from "react-router-dom";
 import axios from 'axios';
-// import Select from "react-dropdown-select";
 import Select from "react-select";
 let url = require('../config.json')
 
@@ -236,7 +235,7 @@ const SealingSearch = () => {
     return word.toUpperCase();
   }
   function setSearchLogs(payload) {
-    const requestPromise = fetch(`${url.api_url}/api/create_log`, {
+    fetch(`${url.api_url}/api/create_log`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -431,9 +430,7 @@ const SealingSearch = () => {
           </thead>
           <tbody>
             {searchResults.map((result, index) => {
-              const isResultInExisting = existingResult.some(
-                (existingRow) => existingRow === result.CONS_REF
-              );
+              existingResult.some((existingRow) => existingRow === result.CONS_REF);
 
               function formatDateToDDMMYYYY(dateString) {
                 const date = new Date(dateString);
@@ -538,7 +535,7 @@ const SealingSearch = () => {
               <Button variant="primary" className="mr-2">
                 Back To Home
               </Button>
-              <Button variant="success">
+              <Button variant="success" disabled={isDuesSearchComplete_2}>
                 <i className="fa fa-check"></i> Complete MCD Search
               </Button>
             </div>

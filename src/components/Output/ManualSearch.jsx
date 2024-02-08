@@ -252,8 +252,16 @@ const ManualSearch = () => {
             addressPart1 = removeSpecialCharsAndCapitalize(addressPart1);
         if (addressPart2)
             addressPart2 = removeSpecialCharsAndCapitalize(addressPart2);
-        if (addressPart3)
-            addressPart3 = removeSpecialCharsAndCapitalize(addressPart3);
+        let str = [];
+        if (addressPart3) {
+            str = addressPart3.split(',');
+            str = str.map(x => {
+                return removeSpecialCharsAndCapitalize(x);
+            })
+        }
+        else {
+            alert("Address search field is empty !");
+        }
         // Combine the address parts into a single address
         let str_arr = ["1ST", "I", "2ND", "II", "3RD", "III"];
         let str_arr1 = ["BLOCK", "BLK", "PLOT", "PLT"];
@@ -277,16 +285,17 @@ const ManualSearch = () => {
         }
         addressPart3 = addressPart3.replace(/[^\w\s-]/g, '');
         setExistingResult([]);
+
+        setAddressPart3('')
         //API call to fetch cases from manually entered address as input by the User
-        fetch(`${url.API_url}/api/manual_search`, {
+        fetch(`${url.API_url}/api/manual_search1`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
             body: JSON.stringify({
-                addressPart1: words_arr,
-                addressPart2: [capitalizeWord(addressPart2)],
-                addressPart3: capitalizeWord(addressPart3),
+                addressPart3: str,
+                SAP_ADDRESS: aufnr_1.SAP_ADDRESS,
                 VAPLZ: caseData.VAPLZ, // Assuming division comes from case data
             }),
         })
@@ -958,16 +967,16 @@ const ManualSearch = () => {
                     <div className='refine-search-form'>
                         <Form style={{ textAlign: 'center' }}>
                             <Row className='mb-3'>
-                                <Form.Group as={Col} md="3" controlId="validationCustom01">
+                                <Form.Group as={Col} xs={12} sm={6} md={3} controlId="validationCustom01">
                                     <Button variant='success' disabled={isDuesSearchComplete_2} onClick={handleCalculateDues}>Complete Dues Search</Button>
                                 </Form.Group>
-                                <Form.Group as={Col} md="3" controlId="validationCustom01">
+                                <Form.Group as={Col} xs={12} sm={6} md={3} controlId="validationCustom01">
                                     <Button variant='warning' onClick={openModal} style={{ width: '100%' }}>Reset</Button>
                                 </Form.Group>
-                                <Form.Group as={Col} md="3" controlId="validationCustom01">
+                                <Form.Group as={Col} xs={12} sm={6} md={3} controlId="validationCustom01">
                                     <Button variant='info' onClick={handleBackToHome}>Back to Home</Button>
                                 </Form.Group>
-                                <Form.Group as={Col} md="3" controlId="validationCustom01" style={{ display: 'flex' }}>
+                                <Form.Group as={Col} xs={12} sm={6} md={3} controlId="validationCustom01" style={{ display: 'flex' }}>
                                     <Form.Control type='text' style={{ width: '10rem', height: 'baseline' }} value={refineQuery} onChange={(e) => setRefineQuery(e.target.value)} />
                                     <Button variant="warning" onClick={handleRefineSearch}>Refine Search</Button>
                                     <Button variant='success' onClick={originalList}>Original List</Button>
@@ -975,6 +984,7 @@ const ManualSearch = () => {
                             </Row>
                         </Form>
                     </div>
+
                 </div>
             </div>
         </div>

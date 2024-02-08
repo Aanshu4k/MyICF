@@ -27,7 +27,8 @@ select{
 
 .fetched-cases-table {
     font-size: 13px;
-    height: 350px;
+    height: auto;
+    max-height: 350px;
     overflow-y: scroll;
     margin: 5px;
     padding: 5px;
@@ -35,7 +36,17 @@ select{
     border-radius: 20px;
     box-shadow: 0 0 10px rgb(158, 158, 158);
 }
-
+.top-pagination{
+    display: flex ;
+    justify-content: space-between;
+}
+.order-filter{
+    border-radius: 9px;
+    height: 39px;
+    width: 330px;
+    margin-right: 13px;
+    padding-left: 10px;
+}
 tr.selected {
     background-color: #318ef3;
     color: white;
