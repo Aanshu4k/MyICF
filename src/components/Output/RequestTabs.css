@@ -1,18 +1,18 @@
 .nav-tabs {
-    border-radius: 20px;
-    overflow: hidden;
-  }
-  
-  .nav-item .nav-link.active {
-    background-color: rgb(228, 228, 228);
-    color: rgb(0, 0, 0);
-    text-transform: capitalize;
-    font-size: 20px;
-  }
-  
-  .nav-item .nav-link {
-    background-color: white;
-    font-size: 20px;
-    color: black;
-  }
-  
+  border-radius: 20px;
+  overflow: hidden;
+  margin-bottom: -7px;
+}
+
+.nav-item .nav-link.active{
+  background-color: rgb(255, 255, 255); /* White color */
+  color: rgb(0, 0, 0);
+  text-transform: capitalize;
+  font-size: 20px;
+}
+
+.nav-item .nav-link {
+  background-color: rgb(241, 241, 241); /* Grey color */
+  font-size: 20px;
+  color: black;
+}

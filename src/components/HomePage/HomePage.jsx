@@ -5,7 +5,6 @@ import axios from "axios";
 import { useState, useEffect } from "react";
 import './HomePage.css';
 import Table from "react-bootstrap/Table";
-import Form from 'react-bootstrap/Form';
 import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import Container from 'react-bootstrap/Container';
@@ -20,13 +19,11 @@ const HomePage = () => {
     const [caseCount, setCaseCount] = useState(0);
     const [exclude_terms, set_exclude_terms] = useState([]);
     const [exclude_terms1, set_exclude_terms1] = useState([]);
-    const [resetDivision, setResetDivision] = useState(false);
     const [selectedRows, setSelectedRows] = useState([]);
     const [selectAllChecked, setSelectAllChecked] = useState(false);
-    const [selectedRowCount, setSelectedRowCount] = useState(0);
     const [showTable, setShowTable] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const itemsPerPage=10;
     const [ipAddress, setIpAddress] = useState(null);
     const [aufnrSearch, setAufnrSearch] = useState('');
     const navigate = useNavigate();
@@ -106,7 +103,7 @@ const HomePage = () => {
                 setCasesOther(rowsWithId);
                 setCaseCount(rowsWithId.length); // Update the case count
                 console.log("Fetched cases data:", rowsWithId);
-                let filter = divisions.filter((x) => x.VAPLZ === value);
+                // let filter = divisions.filter((x) => x.VAPLZ === value);
                 localStorage.setItem("selectedDivision", JSON.stringify(selectedDivision));
 
                 //API call to fetch synonyms
@@ -251,12 +248,11 @@ const HomePage = () => {
         filteredData[0].forEach((x) => {
             if (x) {
                 let r = removeSpecialCharsAndCapitalize(x);
-                console.log(r, "wadhjxnm");
+                console.log(r, "cleaned and capital string ");
                 finalArr.push(r + rest);
             }
         });
-
-        console.log(finalArr);
+        console.log(finalArr, "finalArry in getWordArr");
         return finalArr;
     };
 
@@ -273,7 +269,7 @@ const HomePage = () => {
 
     const getWordArr1 = (word, rest) => {
         console.log(word, "wordwordwordword");
-        let data = localStorage.getItem("area#");
+        let data = localStorage.getItem("area");
         if (data) {
             data = JSON.parse(data);
         } else {
@@ -298,10 +294,7 @@ const HomePage = () => {
             try {
                 let inputAddress = address;
                 // inputAddress = inputAddress.replace('&',' ')
-                inputAddress = inputAddress.replace(
-                    /([a-zA-Z0-9])-*, *([a-zA-Z0-9])/g,
-                    "$1, $2"
-                );
+                inputAddress = inputAddress.replace(/([a-zA-Z0-9])-*, *([a-zA-Z0-9])/g, "$1, $2");
                 console.log(inputAddress, "inputAddressfilteredSapAddress");
 
                 // inputAddress = inputAddress.replace(/[^\w\s-/()]/g, '');
@@ -348,7 +341,7 @@ const HomePage = () => {
                     const endsWithNumber = /\d$/.test(currentWord);
                     const startsWithNumber = /^\d/.test(word);
                     console.log(currentWord, word, isNaN(word), "defrf");
-                    // // alert()
+
                     if (!/[a-zA-Z]/.test(word)) {
                         let numbersBeforeSlash = word.split("/")[0];
 
@@ -570,7 +563,7 @@ const HomePage = () => {
         function setSearchLogs(payload) {
             let usertype = localStorage.getItem("user") || "undefined"
             payload['usertype'] = usertype;
-            const requestPromise = fetch(`${url.API_url}/api/create_log`, {
+            fetch(`${url.API_url}/api/create_log`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -582,34 +575,35 @@ const HomePage = () => {
 
                 })
         }
-        const requests = [];
+
         let saveExistRes = {};
         let addr = [];
         const requestPromises = selectedRows.map(async (row, index) => {
             const startTime = new Date();
             let finalStr = await searchMatchingResultAlgoAgain(row.SAP_ADDRESS, []);
-            const inputAddress = row.SAP_ADDRESS;
+
             function containsWord(word) {
                 if (word && word.includes('NO')) {
                     return false;
                 }
                 return exclude_terms.some(arrWord => word.includes(arrWord.toUpperCase()))
             }
+
             let new_arr = finalStr.filter(x => !containsWord(x))
             finalStr = new_arr;
             const uniqueArray = [...new Set(finalStr)];
             finalStr = uniqueArray;
             let secondFinalStr = await searchMatchingResultAlgoAgainForWords(row.SAP_ADDRESS, []);
-            console.log("Second FinalStr : ", secondFinalStr)
+            console.log(finalStr, "final str & second final str", secondFinalStr);
+
             let uniqueArray1 = [...new Set(secondFinalStr)];
             uniqueArray1 = uniqueArray1.map(x => x.toUpperCase());
-            console.log("Final Str : ", finalStr);
-            console.log("Unique Array 1 : ", uniqueArray1)
-
+            console.log(finalStr, "kaml sharma", uniqueArray1);
             let gali_no = finalStr.filter(x => x.includes('GALI'));
             finalStr = finalStr.filter(x => !x.includes('GALI'));
 
             uniqueArray1 = uniqueArray1.filter(x => !x.includes('GALI'))
+
             uniqueArray1.push(...gali_no);
             uniqueArray1 = uniqueArray1.filter(x => !x.includes('EXT'));
 
@@ -625,22 +619,27 @@ const HomePage = () => {
                     if (isAreaExist.length) {
                         isAreaExis1t.push(x);
                         r1.push(x, ...arr)
-                    }
-                    else {
+                    } else {
+                        console.log(arr, "arr for address part1")
                         r.push(x, ...arr)
                     }
-                }
-                else {
+                } else {
                     r.push(x)
                 }
             });
-            let areaExist2 = [];
+            console.log(r, "r");
+
             let removeonlystr = ["dairy", "hn0", "propno", "and"];
-            r.map(x => x = removeWordsFromArray(x, removeonlystr));
+            let areaExist2 = [];
+            console.log(uniqueArray1, "unique Array 1");
+            r.map(x => {
+                x = removeWordsFromArray(x, removeonlystr);
+                return null;
+            });
 
             let sealing_str = []
+            
             uniqueArray1.forEach(x => {
-                console.log("Unique Array 1 : ", x)
                 const prefix = x.match(/^([a-zA-Z]+)(.*)/);
                 if (prefix && prefix.length) {
                     let arr = getWordArr(prefix[1], prefix[2]);
@@ -655,19 +654,19 @@ const HomePage = () => {
                             sealing_str.push(x, breakword1);
                             areaExist2.push(x, breakword)
                         }
-
                     } else {
-                        console.log(arr, "array")
+                        console.log(arr, "arr")
                         r1.push(x, ...arr)
                     }
                 } else {
                     r1.push(x)
                 }
             });
-
-            console.log(r, "isAreaExist")
+            
+            console.log("sealing str : ",sealing_str)
+            console.log(r, "isAreaExist1")
             r = r.filter(x => !isAreaExis1t.includes(x));
-            console.log(r, "isAreaExist2")
+            console.log(r, "isAreaExist1 after r filter")
             sealing_str = [...sealing_str];
             sealing_str = sealing_str.filter(x => x !== "PHASE")
 
@@ -709,18 +708,19 @@ const HomePage = () => {
                 console.log(filter, "filterfilterfilter")
                 r.push(...filter);
                 r1 = r1.filter(x => !x.startsWith("KH"));
+
             } else {
                 // r = r.filter(element => isNaN(element) || element >= 100);
             };
             if (!r.length) {
-                let data = localStorage.getItem('area#');
+                let data = localStorage.getItem('area');
                 if (data) {
                     data = JSON.parse(data);
                 } else {
                     data = []
                 };
                 let flattenedArray = [].concat(...data);
-                console.log(flattenedArray, "data ...");
+                console.log(flattenedArray, "flattened array");
                 r = r1;
                 r = r.filter(element => !flattenedArray.includes(element));
                 r = r.filter(element => element.length > 2);
@@ -745,12 +745,12 @@ const HomePage = () => {
                 sealing_str,
                 secondFinalStr: r1
             };
-            console.log("PAYLOAD FOR SEARCH DATA : ", payload)
             let splitedNumeric = []
             r.map(x => {
                 if (x) {
                     let word = splitStringByNumericBetweenAlphabets(x);
                     splitedNumeric.push(...word);
+
                 }
                 return null;
             })
@@ -776,14 +776,13 @@ const HomePage = () => {
 
             payload.finalStr = finalSplitWords;
             let ndstr = [];
-            let khExist = payload.secondFinalStr.filter(x => x.startsWith("KH"));
-            if (khExist.length) payload.finalStr = [];
             payload.secondFinalStr.map(x => {
                 if (x.startsWith("KH")) {
                     payload.finalStr.push(x)
                 } else {
                     ndstr.push(x)
                 }
+                return null;
             });
             payload.secondFinalStr = ndstr;
             payload['addr'] = row;
@@ -800,7 +799,6 @@ const HomePage = () => {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
                 let data = await response.json();
-                console.log("Search API response  : ", data);
                 row.final = data.results_count;
                 if (data.count <= 2000) {
                     saveExistRes[`${row.AUFNR}`] = data.results_count;
@@ -813,7 +811,6 @@ const HomePage = () => {
                 const seconds = Math.floor((timeElapsedInMilliseconds % 60000) / 1000);
                 const milliseconds = (timeElapsedInMilliseconds % 1000).toString().padStart(3, '0').slice(0, 2);
                 const formattedTime = `${minutes.toString().padStart(2, '0')} minutes, ${seconds.toString().padStart(2, '0')} seconds, ${milliseconds} milliseconds`;
-
                 localStorage.setItem('manual', JSON.stringify(row));
                 let obj = {
                     "obj": {
@@ -839,7 +836,7 @@ const HomePage = () => {
         // Use Promise.all to wait for all promises to resolve
         await Promise.all(requestPromises);
         localStorage.removeItem('existingResult');
-        localStorage.setItem('saveExistRes', JSON.stringify(saveExistRes)); //save the nearby fetched cases in local storage
+        localStorage.setItem('saveExistRes', JSON.stringify(saveExistRes));
         navigate('/output');
     };
     const handleDivsionChange = (e) => {
@@ -959,16 +956,16 @@ const HomePage = () => {
                                     </td>
                                     <td>
                                         {data.dues_found ? (
-                                            <span className="span-check">&#10003;</span>
+                                            <span className="span-check"></span>
                                         ) : (
-                                            <span className="span-cross">&#10540;</span>
+                                            <span className="span-cross"></span>
                                         )}
                                     </td>
                                     <td>
                                         {data.mcd_found ? (
-                                            <span className="span-check">&#10003;</span>
+                                            <span className="span-check"></span>
                                         ) : (
-                                            <span className="span-cross">&#10540;</span>
+                                            <span className="span-cross"></span>
                                         )}
                                     </td>
                                 </tr>

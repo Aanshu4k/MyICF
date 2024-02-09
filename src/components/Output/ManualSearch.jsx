@@ -169,10 +169,8 @@ const ManualSearch = () => {
     function removeSpecialCharsAndCapitalize(inputString) {
         // Remove special characters and spaces, but keep numeric characters
         const cleanedString = inputString.replace(/[^a-zA-Z0-9]/g, '');
-
         // Capitalize the cleaned string
         const capitalizedString = cleanedString.toUpperCase();
-
         return capitalizedString;
     }
     function capitalizeWord(word) {
@@ -506,10 +504,28 @@ const ManualSearch = () => {
         })
     };
 
+    const refineSearch = async (searchResults, query) => {
+        // Convert the query into an array of terms separated by commas
+        const searchTerms = query.split(',').map(term => term.trim());
+        // Filter the search results
+        const filteredResults = searchResults.filter(customer => {
+            return searchTerms.every(term => {
+                // Escape special characters and create a case-insensitive regex for each term
+                const escapedTerm = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                const termRegex = new RegExp(escapedTerm, 'i');
+                // Check if the term is included in the SAP address
+                return termRegex.test(removeSpecialCharsAndCapitalize(customer.SAP_ADDRESS)) ||
+                    customer.SAP_ADDRESS.toLowerCase().includes(term.toLowerCase());
+            });
+        });
+        return filteredResults;
+    }
+
     //clean the search query and extracts its matching address using searchMatchingResultAlgoAgain function
-    const refineSearch = async (data, str) => {      //auto searched data and search input by the user
+    const refineSearchOld = async (data, str) => {      //auto searched data and search input by the user
         return new Promise(async (res, rej) => {
             try {
+                console.log("Data in refine search : ", data);
                 if (str) {
                     str = removeSpecialCharsAndCapitalize(str);
                 }

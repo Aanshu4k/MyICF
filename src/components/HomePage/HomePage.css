@@ -6,7 +6,9 @@
     margin: 30px 0;
     padding: 30px;
   }
-  
+  table{
+    text-align: center;
+  }
 .division-section {
     display: flex;
     flex-direction: row;
@@ -80,3 +82,16 @@ tr.selected:hover {
 Button{
     height: min-content;
 }
+
+.span-check::before {
+    content: "\2714"; /* Unicode character for tick mark */
+    color: green; /* Green color */
+    font-size: 30px; /* Adjust size */
+  }
+  
+  .span-cross::before {
+    content: "\2716"; /* Unicode character for cross mark */
+    color: red; /* Red color */
+    font-size: 30px; /* Adjust size */
+  }
+  

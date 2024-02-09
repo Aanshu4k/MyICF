@@ -1,4 +1,7 @@
 import Table from "react-bootstrap/Table";
+import Container from 'react-bootstrap/Container';
+import Row from 'react-bootstrap/Row';
+import Col from 'react-bootstrap/Col';
 import Form from "react-bootstrap/Form";
 import './SealingSearch.css';
 import Button from "react-bootstrap/Button";
@@ -6,11 +9,14 @@ import { useState, useEffect } from 'react';
 import { useParams } from "react-router-dom";
 import axios from 'axios';
 import Select from "react-select";
+import * as XLSX from 'xlsx';
+import Swal from 'sweetalert2';
 let url = require('../config.json')
 
 const SealingSearch = () => {
   const [aufnr_1, setAufnr_1] = useState({});
   const { aufnr } = useParams();
+  const [userTypes, setUserType] = useState("undefined");
   const [divisions, setDivisions] = useState([]);
   const [caseData, setCaseData] = useState({});
   const [searchResults, setSearchResults] = useState([]);
@@ -112,6 +118,8 @@ const SealingSearch = () => {
       });
   };
   useEffect(() => {
+    let usertype = localStorage.getItem("user") || "undefined";
+    setUserType(usertype)
     fetchIpAddress();
     fetchDivisions();
   }, []);
@@ -326,7 +334,7 @@ const SealingSearch = () => {
         setSearchResults([]);
         setSearchResults1([]);
         setSearchResultsOther([]);
-
+        data.data = data.data.filter(x => !existingResult.includes(x.id))
         finalres.map(x => {
           x.SEARCH_MODE = "AUTO-MODE";
           return null;
@@ -371,6 +379,275 @@ const SealingSearch = () => {
 
     setSelectedDivision(selectedOption);
     console.log("Selected Division for MCD search : ", selectedDivision)
+  }
+
+  function checkBt() {
+    let dues = sessionStorage.getItem("duesSearchComplete");
+    let mcd = sessionStorage.getItem("mcdSearchComplete");
+    if (mcd) {
+      setDuesSearchComplete_2(true);
+    } else {
+      setDuesSearchComplete_2(0);
+    }
+    if (dues && mcd) {
+      setDuesSearchComplete_1(true)
+    } else {
+      setDuesSearchComplete_1(null)
+    }
+  }
+  const columnsToExport = ["SEARCH_MODE", "CF_CATEGORY", "ACCOUNT_CLASS", "SAP_DUES", "MOVE_OUT", "CONTRACT_ACCOUNT", "CSTS_CD", "SAP_NAME", "SAP_ADDRESS", "SAP_POLE_ID", "TARIFF", "SEQUENCE_NO"];
+  const exportToExcel = (data, user) => {
+    if (!data.length) {
+      alert("No data exist");
+      return
+    }
+
+    for (let index = 0; index < data.length; index++) {
+      let element = data[index];
+      element['CF_CATEGORY'] = element['BP_TYPE'];
+      element['ACCOUNT_CLASS'] = element['SAP_DEPARTMENT'];
+      element['SOLR_DUES'] = element['solr_dues'];
+      element['SAP_DUES'] = element['DUES'];
+      element['MOVE_OUT'] = element['MOVE_OUT'].replace("00:00:00.0", "");
+    }
+    // Create a new array containing only the selected columns
+    const filteredData = data.map((item) => {
+      const filteredItem = {};
+      columnsToExport.forEach((column) => {
+        filteredItem[column] = item[column];
+        if (!filteredItem['SEARCH_MODE']) {
+          filteredItem['SEARCH_MODE'] = "Manual-Mode"
+        }
+      });
+      return filteredItem;
+    });
+    const ws = XLSX.utils.json_to_sheet(filteredData);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+    XLSX.writeFile(wb, `${user.AUFNR}.xlsx`);
+  };
+
+  const handleCalculateDues = () => {
+    let auto = selectedRows_1.filter(x => x.SEARCH_MODE === "AUTO-MODE").length;
+    let manual = selectedRows_1.filter(x => !x.SEARCH_MODE).length;
+    let satisfactionAuto = null;
+    let satisfactionManual = null;
+    if (duesData_ && duesData_.duesData.length) {
+      Swal.fire({
+        title: 'Are you satisfied with the results?',
+        html: `
+      <div>
+      <h4 style="font-weight: bold; font-size: 18px; text-align: center;">Auto Result</h4>
+      <span>
+          <input type="radio" name="satisfactionAuto" value="yes" ${satisfactionAuto === true ? 'checked' : ''}> Yes
+        </span>
+        <span>
+          <input type="radio" name="satisfactionAuto" value="no" ${satisfactionAuto === false ? 'checked' : ''}> No
+        </span>
+      </div>
+      </br>
+      <div>
+      <h4 style="font-weight: bold; font-size: 18px; text-align: center;">Manual Result</h4>
+        <span>
+          <input type="radio" name="satisfactionManual" value="yes" ${satisfactionManual === true ? 'checked' : ''}> Yes
+        </span>
+        <span>
+          <input type="radio" name="satisfactionManual" value="no" ${satisfactionManual === false ? 'checked' : ''}> No
+        </span>
+      </div>
+    `,
+        preConfirm: () => {
+          satisfactionAuto = document.querySelector('input[name="satisfactionAuto"]:checked')?.value;
+          satisfactionManual = document.querySelector('input[name="satisfactionManual"]:checked')?.value;
+
+          if (!satisfactionAuto || !satisfactionManual) {
+            Swal.showValidationMessage('Please answer both questions.');
+            return false; // Prevent closing the modal
+          }
+          return true;
+        },
+        confirmButtonText: 'Yes Complete !!',
+        allowOutsideClick: () => !Swal.isLoading(), // Prevent closing when loading (on Confirm button click)
+      }).then(async (result) => {
+        if (result.isConfirmed) {
+          if (selectedRows_1) {
+            let tt = null
+            let systemId = sessionStorage.getItem("systemId");
+            let obj = {
+              systemId,
+              division: aufnr_1.VAPLZ,
+              userId: userTypes,
+              tpye: "2",
+              address: aufnr_1.SAP_ADDRESS,
+              isCompleted: 1,
+              aufnr: aufnr_1.AUFNR,
+              mcdData: searchResults,
+              selectedMcd: selectedRows_1
+            }
+            console.log(obj);
+            await fetch(`https://icf1.bsesbrpl.co.in/api/icf_data_status`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(obj),
+            })
+            if (duesData_ && duesData_.duesData.length) {
+              tt = "w"
+              let caNumbers = duesData_.selectedDues.map(x => x.CONTRACT_ACCOUNT)
+              let response = await fetch(`${url.API_url}/api/calculate_dues`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ caNumbers }),
+              })
+              let dues = await response.json();
+              console.log(dues, "duesduesduesdues")
+              duesData_.selectedDues.forEach(x => {
+                let duess = dues.duesData.filter(y => y.CA_NUMBER === x.CONTRACT_ACCOUNT);
+                if (duess && duess.length) {
+                  x.DUES = duess[0].AMOUNT
+                }
+              });
+              let usertype = localStorage.getItem("user") || "undefined";
+
+              let arr = [...selectedRows_1, ...duesData_.selectedDues]
+              await fetch(`${url.API_url}/api/sendToDsk`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ data: arr, addr: aufnr_1, satisfactionAuto, satisfactionManual, usertype }),
+              })
+              exportToExcel(arr, aufnr_1)
+            }
+            sessionStorage.setItem("duesSearchComplete", "true");
+            checkBt();
+            localStorage.setItem("sealing_set#", JSON.stringify(selectedRows_1));
+            sessionStorage.setItem("mcdSearchComplete", "true");
+            let prev_res = localStorage.getItem("sealingData");
+            if (prev_res) {
+              prev_res = JSON.parse(prev_res)
+            } else {
+              prev_res = []
+            }
+            fetchIpAddress();
+            // Show success message
+            Swal.fire({
+              title: 'Success!',
+              text: tt ? `CF Process completed successfully.` : `MCD search completed successfully.`,
+              icon: 'success',
+              confirmButtonColor: '#3085d6',
+            });
+          }
+        }
+      });
+    }
+    else {
+      if (selectedRows_1) {
+        let tt = null;
+        Swal.fire({
+          title: 'Are you sure?',
+          text: 'Do you want to complete the MCD search?',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#3085d6',
+          cancelButtonColor: '#d33',
+          html: `<style>
+        .enforcement-label { color: blue; }
+        .normal-label { color: green; }
+        .other-label { color: orange; }
+        .move-out-label { color: purple; }
+        .legal-label { color: red; }
+      </style>
+      
+      <div>
+      <h5>Do you want to complete the dues search?</h5>
+      <p><span id="enforcementLabel" class="enforcement-label">Auto-Mode Selected</span> - <span id="enforcementCount" class="enforcement">${auto}</span></p>
+      <p><span id="normalLabel" class="normal-label">Manual-Mode Selected</span> - <span id="normalCount" class="normal">${manual}</span></p>
+    </div>`,
+          confirmButtonText: 'Yes, complete it!'
+        }).then(async (result) => {
+          if (result.isConfirmed) {
+
+            let systemId = sessionStorage.getItem("systemId");
+            let obj = {
+              systemId,
+              address: aufnr_1.SAP_ADDRESS,
+              isCompleted: 1,
+              tpye: "2",
+              aufnr: aufnr_1.AUFNR,
+              mcdData: searchResults,
+              division: aufnr_1.VAPLZ,
+              selectedMcd: selectedRows_1,
+              userId: userTypes,
+            }
+            console.log(obj);
+            await fetch(`https://icf1.bsesbrpl.co.in/api/icf_data_status`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(obj),
+            })
+
+
+            if (duesData_ && duesData_.duesData.length) {
+              tt = "s"
+              let caNumbers = duesData_.selectedDues.map(x => x.CONTRACT_ACCOUNT)
+              let response = await fetch(`${url.API_url}/api/calculate_dues`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ caNumbers }),
+              })
+              let dues = await response.json();
+              console.log(dues, "duesduesduesdues")
+              duesData_.selectedDues.forEach(x => {
+                let duess = dues.duesData.filter(y => y.CA_NUMBER === x.CONTRACT_ACCOUNT);
+                if (duess && duess.length) {
+                  x.DUES = duess[0].AMOUNT
+                }
+              });
+
+              let usertype = localStorage.getItem("user") || "undefined";
+
+              let arr = [...selectedRows_1, ...duesData_.selectedDues]
+              await fetch(`${url.API_url}/api/sendToDsk`, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ data: arr, addr: aufnr_1, satisfactionAuto, satisfactionManual, usertype }),
+              })
+              exportToExcel(arr, aufnr_1)
+            }
+
+            sessionStorage.setItem("duesSearchComplete", "true");
+            checkBt();
+            localStorage.setItem("sealing_set#", JSON.stringify(selectedRows_1));
+            sessionStorage.setItem("mcdSearchComplete", "true");
+            let prev_res = localStorage.getItem("sealingData");
+            if (prev_res) {
+              prev_res = JSON.parse(prev_res)
+            } else {
+              prev_res = []
+            }
+            fetchIpAddress()
+            // Show success message
+            Swal.fire({
+              title: 'Success!',
+              text: tt ? `CF Process completed successfully.` : `MCD search completed successfully.`,
+              icon: 'success',
+              confirmButtonColor: '#3085d6',
+            });
+          }
+        });
+
+      }
+    }
   }
 
   return (
@@ -469,79 +746,75 @@ const SealingSearch = () => {
         </Table>
       </div>
 
-      <div style={{ display: "flex", border: "2px solid grey", justifyContent: 'space-around' }}>
-        <Form className="p-3" >
-          <div className="row" style={{ padding: '10px' }}>
-            <div className="col-md-6">
-              <Form.Group controlId="division">
-                <Select
-                  options={divisions}
-                  onChange={handleSelectedDivision}
-                  value={selectedDivision}
-                  isMulti
-                  placeholder="Choose Divisions"
-                  dropdownPosition={searchResults.length ? "top" : "bottom"}
-                  optionStyle={{ fontSize: '16px', fontWeight: "600", width: '330px', color: "black", alignItems: "left", textAlign: "left" }}
-                />
-              </Form.Group>
-            </div>
-            <div className="col-md-6">
-              <Form.Group controlId="khasra">
-                <Form.Control type="text" placeholder="House / Plot / Block / Khasra" value={addressPart1} onChange={(e) => setAddressPart1(e.target.value)} />
-              </Form.Group>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col-md-6">
-              <Form.Group controlId="number">
-                <Form.Control type="text" placeholder="Number (House / Plot / Block)" value={addressPart2} onChange={(e) => setAddressPart2(e.target.value)} />
-              </Form.Group>
-            </div>
-            <div className="col-md-6">
-              <Form.Group controlId="area">
-                <Form.Control type="text" placeholder="Area" value={addressPart3} onChange={(e) => setAddressPart3(e.target.value)} />
-              </Form.Group>
-            </div>
-          </div>
-          <div className="row">
-            <div className="col-md-12" style={{ textAlign: 'center', margin: '10px' }}>
-              <Button variant="danger" className="mr-2" onClick={handleManualSearch}>
-                Start MCD Search
-              </Button>
-            </div>
-          </div>
-        </Form><hr />
-        <div className="p-3">
-          <Form style={{ display: 'flex', flexDirection: 'column' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-end', margin: '10px 0' }}>
-              <Form.Group controlId="number2">
-                <Form.Label className="mr-2">
-                  Number (House / Plot / Block)
-                </Form.Label>
-                <Form.Control
-                  type="text"
-                  placeholder="Enter number"
-                  className="mr-2"
-                />
-              </Form.Group>
-              <Button variant="danger" className="mr-2">
-                Refine Search
-              </Button>
-              <Button variant="secondary" className="mr-2">
-                Original List
-              </Button>
-            </div>
-            <div>
-              <Button variant="primary" className="mr-2">
-                Back To Home
-              </Button>
-              <Button variant="success" disabled={isDuesSearchComplete_2}>
-                <i className="fa fa-check"></i> Complete MCD Search
-              </Button>
-            </div>
-          </Form>
-        </div>
-      </div>
+      <Container fluid style={{ display: "flex", padding: '1rem', border: "2px solid grey", justifyContent: 'space-around' }}>
+        <Row style={{ width: '100%' }}>
+          <Col xs={12} sm={6} style={{ marginBottom: '1rem', marginTop: '2rem', paddingRight: '8rem' }}>
+            <Form>
+              <Row style={{ marginBottom: '0.5rem' }}> {/* Added margin bottom */}
+                <Col>
+                  <Form.Group controlId="division">
+                    <Select
+                      options={divisions}
+                      onChange={handleSelectedDivision}
+                      value={selectedDivision}
+                      isMulti
+                      placeholder="Choose Divisions"
+                      dropdownPosition={searchResults.length ? "top" : "bottom"}
+                      optionStyle={{ fontSize: '16px', fontWeight: "600", width: '100%', color: "black", alignItems: "left", textAlign: "left" }}
+                    />
+                  </Form.Group>
+                </Col>
+              </Row>
+              <Row className="justify-content-center" style={{ marginBottom: '0.5rem' }}> {/* Added margin bottom */}
+                <Col xs="auto">
+                  <Form.Group controlId="area">
+                    <Form.Control type="text" placeholder="Ex: 140,khasra 20, laxmi" value={addressPart3} onChange={(e) => setAddressPart3(e.target.value)} />
+                  </Form.Group>
+                </Col>
+                <Col xs="auto">
+                  <Button variant="danger" onClick={handleManualSearch}>Start MCD Search</Button>
+                </Col>
+              </Row>
+            </Form>
+          </Col>
+
+          <Col xs={12} sm={6} style={{ marginBottom: '1rem' }}>
+            <Form>
+              <Row>
+                <Col>
+                  <div style={{ marginBottom: '1rem' }}>Number (House / Plot / Block)</div>
+                </Col>
+              </Row>
+              <Row className="mb-2">
+                <Col>
+                  <Form.Group controlId="refine-term">
+                    <Form.Control type="text" placeholder="Enter number" />
+                  </Form.Group>
+                </Col>
+                <Col xs="auto">
+                  <Button variant="danger" className="mr-2">Refine Search</Button>
+                </Col>
+                <Col xs="auto">
+                  <Button variant="secondary" className="mr-2">Original List</Button>
+                </Col>
+              </Row>
+              <Row>
+                <Col xs="auto">
+                  <Button variant="primary" className="mr-2">Back To Home</Button>
+                </Col>
+                <Col xs="auto">
+                  <Button variant="success" disabled={isDuesSearchComplete_2}
+                    onClick={handleCalculateDues}>
+                    <i className="fa fa-check"></i> Complete MCD Search
+                  </Button>
+                </Col>
+              </Row>
+            </Form>
+          </Col>
+        </Row>
+      </Container>
+
+
     </div >
   );
 };
